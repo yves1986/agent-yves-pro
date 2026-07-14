@@ -1,0 +1,9 @@
+node_modules/
+.wwebjs_auth/
+.wwebjs_cache/
+data/memory.json
+.env
+*.log
+.DS_Store
+qr.png
+qr.txt

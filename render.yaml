@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: agent-yves-pro
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: DEEPSEEK_API_KEY
+        sync: false
+        description: Votre clé API DeepSeek
+      - key: CONTACT_PHONE
+        value: 0140505518
+      - key: MY_PERSONAL_NUMBER
+        value: 2250710076550
+      - key: PORT
+        value: 3000

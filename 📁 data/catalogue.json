@@ -1,0 +1,43 @@
+{
+    "articles": [
+        {
+            "id": 1,
+            "nom": "Villa Faya 5 pièces",
+            "categorie": "Immobilier",
+            "prix": 250000,
+            "prix_location": 50000,
+            "description": "Belle villa avec piscine, 5 chambres, salon, cuisine équipée",
+            "localisation": "Faya, Abidjan",
+            "disponible": true,
+            "images": [],
+            "mots_cles": [
+                "villa",
+                "faya",
+                "5 pièces",
+                "piscine"
+            ]
+        },
+        {
+            "id": 2,
+            "nom": "Appartement Angré 3 pièces",
+            "categorie": "Immobilier",
+            "prix": 85000,
+            "prix_location": 35000,
+            "description": "Appartement moderne, 3 chambres, salon, cuisine",
+            "localisation": "Angré, Abidjan",
+            "disponible": true,
+            "images": [],
+            "mots_cles": [
+                "appartement",
+                "angré",
+                "3 pièces"
+            ]
+        }
+    ],
+    "categories": [
+        "Immobilier",
+        "Électronique",
+        "Véhicules",
+        "Mode"
+    ]
+}
