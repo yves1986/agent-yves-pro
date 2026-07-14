@@ -1,7 +1,7 @@
 services:
   - type: web
     name: agent-yves-pro
-    runtime: node
+    runtime: nodegit 
     buildCommand: npm install
     startCommand: npm start
     plan: free
@@ -14,4 +14,4 @@ services:
       - key: MY_PERSONAL_NUMBER
         value: 2250710076550
       - key: PORT
-        value: 3000
+        value: 3000git 
