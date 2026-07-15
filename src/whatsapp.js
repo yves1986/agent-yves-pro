@@ -2,6 +2,9 @@ const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs');
 const path = require('path');
+const puppeteer = require('puppeteer-core');
+const chromium = require('@sparticuz/chromium');
+
 const {
     log,
     getImagePath,
@@ -35,9 +38,10 @@ class WhatsAppService {
         this.catalogLink = process.env.CATALOG_LINK || 'https://wa.me/c/122990784208917';
         this.storeName = "Au Pays Des Senteurs";
 
+        // Le client sera créé plus tard (dans start())
+        this.client = null;
+
         this.ensureDirectories();
-        this.client = this.createClient();
-        this.setupEvents();
     }
 
     ensureDirectories() {
@@ -56,33 +60,29 @@ class WhatsAppService {
         });
     }
 
-    createClient() {
+    // ========== CRÉATION DU CLIENT AVEC CHROMIUM ==========
+    async createClient() {
+        const executablePath = await chromium.executablePath();
+
         return new Client({
             authStrategy: new LocalAuth({
                 dataPath: this.sessionPath
             }),
             puppeteer: {
-                executablePath: '/usr/bin/google-chrome-stable',
                 headless: true,
+                executablePath: executablePath,
                 args: [
+                    ...chromium.args,
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
-                    '--disable-gpu',
-                    '--disable-web-security',
-                    '--disable-features=IsolateOrigins,site-per-process',
-                    '--disable-extensions',
-                    '--disable-default-apps',
-                    '--disable-sync',
-                    '--window-size=1280,720'
+                    '--disable-dev-shm-usage'
                 ],
-                defaultViewport: null,
-                ignoreDefaultArgs: ['--disable-extensions']
+                defaultViewport: null
             }
         });
     }
 
+    // ========== ATTACHEMENT DES ÉVÉNEMENTS ==========
     setupEvents() {
         this.client.on('qr', qr => {
             log('📱 QR Code généré - Scannez avec WhatsApp', 'INFO');
@@ -178,7 +178,7 @@ class WhatsAppService {
             log(`Attente de ${delay / 1000}s avant reconnexion`, 'RECONNECT');
             await new Promise(resolve => setTimeout(resolve, delay));
 
-            this.client = this.createClient();
+            this.client = await this.createClient();
             this.setupEvents();
             await this.client.initialize();
 
@@ -387,7 +387,6 @@ class WhatsAppService {
 
     // ========== TEMPS DE RÉPONSE NATUREL ==========
     async think() {
-        // Délai aléatoire entre 1.5 et 4 secondes (simule une réflexion naturelle)
         const delay = 1500 + Math.random() * 2500;
         await wait(delay);
     }
@@ -415,15 +414,12 @@ class WhatsAppService {
             // ========== GESTION DES MESSAGES VOCAUX ==========
             if (message.type === 'ptt' || message.type === 'audio') {
                 log(`🎤 Message vocal reçu de ${senderName}`, 'INFO');
-
-                // Réponse polie (le temps de réflexion a déjà été fait)
                 const reponse = `🙏 Je suis vraiment désolée ${senderName}, mais mon téléphone a un problème de son et je ne peux pas lire votre message vocal.
 
 📝 Pourriez-vous me l'écrire par texte s'il vous plaît ? Je vous répondrai immédiatement.
 
 Merci pour votre compréhension ! 🙏
 ${this.getFinPhrase()}`;
-
                 await message.reply(reponse);
                 return;
             }
@@ -775,13 +771,11 @@ ${this.catalogue.formatList(results, `📂 ${categoryMatch}`)}`);
             const iaResponse = await this.iaService.getResponse(msg, catalogueContext, history);
 
             if (iaResponse) {
-                // Vérifier si la réponse contient déjà une introduction
                 let finalResponse = iaResponse;
                 if (!iaResponse.toLowerCase().includes('au pays des senteurs')) {
                     const intro = this.getReponsePhrase();
                     finalResponse = `${intro} ${iaResponse}`;
                 }
-                // Ajouter le lien du catalogue si ce n'est pas déjà fait
                 if (!iaResponse.includes(this.catalogLink)) {
                     finalResponse += this.getFinPhrase();
                 }
@@ -818,6 +812,8 @@ ${this.getFinPhrase()}`);
     async start() {
         try {
             log('🚀 Démarrage de l\'agent...', 'INFO');
+            this.client = await this.createClient();
+            this.setupEvents();
             await this.client.initialize();
             this.setupKeepAlive();
             log('✅ Agent initialisé', 'SUCCESS');
@@ -831,9 +827,11 @@ ${this.getFinPhrase()}`);
         log('🔁 Force reconnexion...', 'RECONNECT');
         this.isReady = false;
         try {
-            await this.client.destroy();
+            if (this.client) {
+                await this.client.destroy();
+            }
         } catch (err) { }
-        this.client = this.createClient();
+        this.client = await this.createClient();
         this.setupEvents();
         await this.client.initialize();
     }
