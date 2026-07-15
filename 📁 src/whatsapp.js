@@ -411,6 +411,22 @@ class WhatsAppService {
             // ========== TEMPS DE RÉFLEXION NATUREL ==========
             await this.think();
 
+            // ========== GESTION DES MESSAGES VOCAUX ==========
+            if (message.type === 'ptt' || message.type === 'audio') {
+                log(`🎤 Message vocal reçu de ${senderName}`, 'INFO');
+
+                // Réponse polie (le temps de réflexion a déjà été fait)
+                const reponse = `🙏 Je suis vraiment désolée ${senderName}, mais mon téléphone a un problème de son et je ne peux pas lire votre message vocal.
+
+📝 Pourriez-vous me l'écrire par texte s'il vous plaît ? Je vous répondrai immédiatement.
+
+Merci pour votre compréhension ! 🙏
+${this.getFinPhrase()}`;
+
+                await message.reply(reponse);
+                return;
+            }
+
             // ========== SALUTATIONS ==========
             const salutations = ['bonjour', 'salut', 'coucou', 'hello', 'hi', 'bonsoir', 'bon après-midi', 'bonne journée'];
             if (salutations.some(s => msgLower.includes(s))) {
