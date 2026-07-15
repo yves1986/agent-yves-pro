@@ -1,4 +1,4 @@
-const axios = require('axios');
+﻿const axios = require('axios');
 const { log } = require('./utils');
 
 class IAService {
@@ -14,22 +14,22 @@ class IAService {
 
         while (attempts < this.maxRetries) {
             try {
-                const systemPrompt = `Tu es KADI, une conseillère commerciale professionnelle pour la boutique "Au Pays Des Senteurs".
+                const systemPrompt = `Tu es KADI, une conseillÃ¨re commerciale professionnelle pour la boutique "Au Pays Des Senteurs".
 
 Voici le catalogue disponible :
 ${catalogueContext}
 
-RÈGLES IMPORTANTES :
-1. Tu t'appelles KADI, tu es une conseillère chaleureuse, polie et professionnelle
-2. Tu représentes la boutique "Au Pays Des Senteurs"
-3. Réponds toujours en français, avec un langage simple et courtois
-4. Sois toujours très polie et accueillante
+RÃˆGLES IMPORTANTES :
+1. Tu t'appelles KADI, tu es une conseillÃ¨re chaleureuse, polie et professionnelle
+2. Tu reprÃ©sentes la boutique "Au Pays Des Senteurs"
+3. RÃ©ponds toujours en franÃ§ais, avec un langage simple et courtois
+4. Sois toujours trÃ¨s polie et accueillante
 5. Propose des produits du catalogue si la demande est pertinente
 6. Donne les prix en FCFA
-7. Si un client sort du cadre professionnel (questions personnelles, propos déplacés), recadre-le TRÈS POLIMENT en ramenant la conversation vers les produits. Exemple : "Je vous remercie pour votre intérêt, mais je suis ici pour vous conseiller sur nos produits bien-être. Puis-je vous aider à trouver quelque chose dans notre catalogue ?"
-8. Réponds brièvement (2-4 phrases maximum)
+7. Si un client sort du cadre professionnel (questions personnelles, propos dÃ©placÃ©s), recadre-le TRÃˆS POLIMENT en ramenant la conversation vers les produits. Exemple : "Je vous remercie pour votre intÃ©rÃªt, mais je suis ici pour vous conseiller sur nos produits bien-Ãªtre. Puis-je vous aider Ã  trouver quelque chose dans notre catalogue ?"
+8. RÃ©ponds briÃ¨vement (2-4 phrases maximum)
 9. N'invente pas d'informations
-10. À la fin de chaque conversation ou commande, propose le lien du catalogue : ${process.env.CATALOG_LINK || 'https://wa.me/c/122990784208917'}
+10. Ã€ la fin de chaque conversation ou commande, propose le lien du catalogue : ${process.env.CATALOG_LINK || 'https://wa.me/c/122990784208917'}
 
 CONTACT : ${process.env.CONTACT_PHONE || '0140505518'}`;
 
@@ -55,7 +55,7 @@ CONTACT : ${process.env.CONTACT_PHONE || '0140505518'}`;
                     },
                     {
                         headers: {
-                            'Authorization': `Bearer ${this.apiKey}`,
+                            'Authorization': 'Bearer ' + this.apiKey,
                             'Content-Type': 'application/json'
                         },
                         timeout: 15000
@@ -65,17 +65,17 @@ CONTACT : ${process.env.CONTACT_PHONE || '0140505518'}`;
                 if (response.data && response.data.choices && response.data.choices[0]) {
                     return response.data.choices[0].message.content;
                 } else {
-                    throw new Error('Réponse invalide de DeepSeek');
+                    throw new Error('RÃ©ponse invalide de DeepSeek');
                 }
 
             } catch (error) {
                 attempts++;
-                log(`Tentative ${attempts}/${this.maxRetries} échouée: ${error.message}`, 'ERROR');
+                log(`Tentative ${attempts}/${this.maxRetries} Ã©chouÃ©e: ${error.message}`, 'ERROR');
 
                 if (attempts < this.maxRetries) {
                     await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempts));
                 } else {
-                    log(`Échec après ${this.maxRetries} tentatives`, 'ERROR');
+                    log(`Ã‰chec aprÃ¨s ${this.maxRetries} tentatives`, 'ERROR');
                     return null;
                 }
             }
