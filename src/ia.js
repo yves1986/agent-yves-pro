@@ -55,7 +55,7 @@ CONTACT : ${process.env.CONTACT_PHONE || '0140505518'}`;
                     },
                     {
                         headers: {
-                            'Authorization': `Bearer ${this.apiKey}`,
+                            'Authorization': 'Bearer ' + this.apiKey,
                             'Content-Type': 'application/json'
                         },
                         timeout: 15000
