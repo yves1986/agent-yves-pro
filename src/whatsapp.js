@@ -4,15 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer-core');
 const chromium = require('@sparticuz/chromium');
-
 const {
-    log,
-    getImagePath,
-    getVideoPath,
-    fileExists,
-    getArticleImages,
-    getArticleVideos,
-    wait
+    log, getImagePath, getVideoPath, fileExists,
+    getArticleImages, getArticleVideos, wait
 } = require('./utils');
 
 class WhatsAppService {
@@ -35,10 +29,7 @@ class WhatsAppService {
         this.ordersPath = path.join(__dirname, '../data/orders.json');
         this.sessionPath = path.join(__dirname, '../.wwebjs_auth');
 
-        this.catalogLink = process.env.CATALOG_LINK || 'https://wa.me/c/122990784208917';
         this.storeName = "Au Pays Des Senteurs";
-
-        // Le client sera créé plus tard (dans start())
         this.client = null;
 
         this.ensureDirectories();
@@ -53,52 +44,38 @@ class WhatsAppService {
             path.join(__dirname, '../media/videos')
         ];
         dirs.forEach(dir => {
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-                log(`Dossier créé: ${dir}`, 'INFO');
-            }
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         });
     }
 
-    // ========== CRÉATION DU CLIENT AVEC CHROMIUM ==========
     async createClient() {
         const executablePath = await chromium.executablePath();
-
         return new Client({
-            authStrategy: new LocalAuth({
-                dataPath: this.sessionPath
-            }),
+            authStrategy: new LocalAuth({ dataPath: this.sessionPath }),
             puppeteer: {
                 headless: true,
                 executablePath: executablePath,
-                args: [
-                    ...chromium.args,
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage'
-                ],
+                args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
                 defaultViewport: null
             }
         });
     }
 
-    // ========== ATTACHEMENT DES ÉVÉNEMENTS ==========
     setupEvents() {
         this.client.on('qr', qr => {
-            log('📱 QR Code généré - Scannez avec WhatsApp', 'INFO');
-            console.log('\n📱 SCANNEZ CE QR CODE :');
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qr)}`;
+            log('QR Code genere');
+            console.log('\nScannez ce QR Code avec WhatsApp :');
             qrcode.generate(qr, { small: true });
-            console.log('\n⏳ En attente de connexion...\n');
-
-            try {
-                fs.writeFileSync(path.join(__dirname, '../qr.txt'), qr);
-            } catch (err) { }
+            console.log(`\nOu ouvrez ce lien : ${qrUrl}`);
+            console.log('En attente de connexion...\n');
+            try { fs.writeFileSync(path.join(__dirname, '../qr.txt'), qr); } catch (e) { }
         });
 
         this.client.on('authenticated', () => {
             this.isReady = true;
             this.reconnectAttempts = 0;
-            log('🔐 Authentification réussie', 'SUCCESS');
+            log('Authentification reussie');
         });
 
         this.client.on('ready', () => {
@@ -106,118 +83,91 @@ class WhatsAppService {
             this.isInitialized = true;
             this.reconnectAttempts = 0;
             this.loadMemory();
-            log('✅ AGENT KADI ACTIF 24/7', 'READY');
-            console.log(`🏪 ${this.storeName}`);
-            console.log(`📞 ${this.config.CONTACT_PHONE}`);
-            console.log(`📦 ${this.catalogue.articles.length} articles chargés`);
-            console.log(`📸 ${this.catalogue.articles.filter(a => a.images?.length > 0).length} avec images`);
-            console.log(`🎬 ${this.catalogue.articles.filter(a => a.videos?.length > 0).length} avec vidéos`);
-            console.log(`🔗 Catalogue: ${this.catalogLink}`);
-            console.log('\n💡 Commandes: !catalogue, !categories, info [nom], images [nom], video [nom]');
-            console.log('🔄 Tourne sur Render - 24/7\n');
+            log('AGENT KADI ACTIF 24/7');
+            console.log(`Boutique : ${this.storeName}`);
+            console.log(`Contact : ${this.config.CONTACT_PHONE}`);
+            console.log(`${this.catalogue.articles.length} articles charges`);
+            console.log('Commandes : !catalogue, !categories, info [nom], images [nom], video [nom], contact');
         });
 
         this.client.on('auth_failure', async (msg) => {
-            log(`Échec d'authentification: ${msg}`, 'ERROR');
+            log(`Echec auth: ${msg}`);
             this.isReady = false;
             await this.handleReconnection();
         });
 
         this.client.on('disconnected', async (reason) => {
-            log(`Déconnecté: ${reason}`, 'WARNING');
+            log(`Deconnecte: ${reason}`);
             this.isReady = false;
-
-            if (reason !== 'LOGOUT') {
-                await this.handleReconnection();
-            }
+            if (reason !== 'LOGOUT') await this.handleReconnection();
         });
 
         this.client.on('error', async (error) => {
-            log(`Erreur client: ${error.message}`, 'ERROR');
-            if (error.message.includes('TIMEOUT') ||
-                error.message.includes('closed') ||
-                error.message.includes('Session') ||
-                error.message.includes('browser')) {
+            log(`Erreur: ${error.message}`);
+            if (error.message.includes('TIMEOUT') || error.message.includes('closed')) {
                 await this.handleReconnection();
             }
         });
 
         this.client.on('message', async message => {
-            if (this.isReady) {
-                await this.handleMessage(message);
-            }
+            if (this.isReady) await this.handleMessage(message);
         });
 
         this.client.on('change_state', (state) => {
-            log(`État changé: ${state}`, 'INFO');
-            if (state === 'CONFLICT' || state === 'UNPAIRED' || state === 'UNPAIRED_IDLE') {
+            log(`Etat: ${state}`);
+            if (['CONFLICT', 'UNPAIRED', 'UNPAIRED_IDLE'].includes(state)) {
                 this.isReady = false;
                 this.handleReconnection();
             }
         });
     }
 
-    // ========== RECONNEXION ==========
     async handleReconnection() {
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            log(`Trop de tentatives (${this.maxReconnectAttempts})`, 'FATAL');
+            log(`Trop de tentatives`, 'FATAL');
             this.reconnectAttempts = 0;
             setTimeout(() => this.handleReconnection(), 60000);
             return;
         }
-
         this.reconnectAttempts++;
-        log(`Tentative ${this.reconnectAttempts}/${this.maxReconnectAttempts}`, 'RECONNECT');
-
+        log(`Tentative ${this.reconnectAttempts}`);
         try {
-            if (this.client) {
-                await this.client.destroy().catch(() => { });
-            }
-
-            const delay = Math.min(this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1), 60000);
-            log(`Attente de ${delay / 1000}s avant reconnexion`, 'RECONNECT');
-            await new Promise(resolve => setTimeout(resolve, delay));
-
+            if (this.client) await this.client.destroy().catch(() => { });
+            const delay = Math.min(5000 * Math.pow(1.5, this.reconnectAttempts - 1), 60000);
+            await wait(delay);
             this.client = await this.createClient();
             this.setupEvents();
             await this.client.initialize();
-
-            log('✅ Reconnexion réussie', 'SUCCESS');
+            log('Reconnexion reussie');
             this.reconnectAttempts = 0;
         } catch (err) {
-            log(`Échec reconnexion: ${err.message}`, 'ERROR');
+            log(`Echec reconnexion: ${err.message}`);
             setTimeout(() => this.handleReconnection(), 30000);
         }
     }
 
-    // ========== KEEP ALIVE ==========
     setupKeepAlive() {
         this.keepAliveInterval = setInterval(() => {
             if (this.isReady && this.client) {
-                try {
-                    if (this.client.pupPage) {
-                        this.client.pupPage.evaluate(() => 'keep-alive').catch(() => { });
-                    }
-                } catch (err) { }
+                try { this.client.pupPage?.evaluate(() => 'keep-alive').catch(() => { }); } catch (e) { }
             }
         }, 30000);
 
         this.checkInterval = setInterval(async () => {
             if (!this.isReady && this.isInitialized) {
-                log('Watchdog: Agent non prêt, reconnexion...', 'WARNING');
+                log('Watchdog: reconnexion');
                 await this.handleReconnection();
             }
-
             if (this.isReady) {
                 try {
                     const state = await this.client.getState().catch(() => null);
                     if (state !== 'CONNECTED') {
-                        log(`État anormal: ${state}`, 'WARNING');
+                        log(`Etat anormal: ${state}`);
                         this.isReady = false;
                         await this.handleReconnection();
                     }
                 } catch (err) {
-                    log(`Erreur vérification état: ${err.message}`, 'ERROR');
+                    log(`Erreur etat: ${err.message}`);
                     this.isReady = false;
                     await this.handleReconnection();
                 }
@@ -225,177 +175,137 @@ class WhatsAppService {
         }, 120000);
     }
 
-    // ========== MÉMOIRE ==========
     loadMemory() {
         if (fs.existsSync(this.memoryPath)) {
-            try {
-                this.memory = JSON.parse(fs.readFileSync(this.memoryPath, 'utf8'));
-                log(`${Object.keys(this.memory).length} clients en mémoire`, 'INFO');
-            } catch (err) {
-                this.memory = {};
-            }
+            try { this.memory = JSON.parse(fs.readFileSync(this.memoryPath, 'utf8')); } catch (e) { this.memory = {}; }
         }
     }
 
     saveMemory() {
-        try {
-            fs.writeFileSync(this.memoryPath, JSON.stringify(this.memory, null, 2));
-        } catch (err) { }
+        try { fs.writeFileSync(this.memoryPath, JSON.stringify(this.memory, null, 2)); } catch (e) { }
     }
 
-    // ========== COMMANDES ==========
     saveOrder(order) {
         let orders = [];
         if (fs.existsSync(this.ordersPath)) {
-            try {
-                orders = JSON.parse(fs.readFileSync(this.ordersPath, 'utf8'));
-            } catch (err) { }
+            try { orders = JSON.parse(fs.readFileSync(this.ordersPath, 'utf8')); } catch (e) { }
         }
         orders.push(order);
         fs.writeFileSync(this.ordersPath, JSON.stringify(orders, null, 2));
-        log(`📦 Nouvelle commande: ${order.produit} x ${order.quantite}`, 'SUCCESS');
+        log(`Nouvelle commande: ${order.produit} x ${order.quantite}`);
     }
 
-    // ========== MÉDIAS ==========
+    // ========== MEDIA ==========
     async sendImage(message, article, imageName) {
         const imagePath = getImagePath(imageName);
-
         if (!fileExists(imagePath)) {
-            await message.reply(`📸 Je suis désolée, l'image de ${article.nom} n'est pas disponible pour le moment.`);
-            log(`Image manquante: ${imagePath}`, 'WARNING');
+            await message.reply(`Image non disponible pour ${article.nom}`);
             return false;
         }
-
         try {
             const media = MessageMedia.fromFilePath(imagePath);
-            await message.reply(media, undefined, {
-                caption: `📸 ${article.nom} - ${this.storeName}`
-            });
+            await message.reply(media, undefined, { caption: `${article.nom}` });
             return true;
         } catch (err) {
-            log(`Erreur envoi image: ${err.message}`, 'ERROR');
+            log(`Erreur image: ${err.message}`);
             return false;
         }
     }
 
     async sendVideo(message, article, videoName) {
         const videoPath = getVideoPath(videoName);
-
         if (!fileExists(videoPath)) {
-            await message.reply(`🎬 Je suis désolée, la vidéo de ${article.nom} n'est pas disponible pour le moment.`);
-            log(`Vidéo manquante: ${videoPath}`, 'WARNING');
+            await message.reply(`Video non disponible pour ${article.nom}`);
             return false;
         }
-
         try {
             const media = MessageMedia.fromFilePath(videoPath);
-            await message.reply(media, undefined, {
-                caption: `🎬 ${article.nom} (5 secondes) - ${this.storeName}`
-            });
+            await message.reply(media, undefined, { caption: `${article.nom} (5 secondes)` });
             return true;
         } catch (err) {
-            log(`Erreur envoi vidéo: ${err.message}`, 'ERROR');
+            log(`Erreur video: ${err.message}`);
             return false;
         }
     }
 
     async sendAllImages(message, article) {
         const images = getArticleImages(article);
-
-        if (!images || images.length === 0) {
-            await message.reply(`📸 Je suis désolée, je n'ai pas de photos de ${article.nom} pour le moment.`);
+        if (!images.length) {
+            await message.reply(`Aucune photo disponible pour ${article.nom}`);
             return;
         }
-
-        await message.reply(`📸 *${images.length} photo(s) de ${article.nom}*`);
-
-        for (const image of images) {
-            await this.sendImage(message, article, image);
-            await wait(1000);
+        await message.reply(`${images.length} photo(s) de ${article.nom}`);
+        for (const img of images) {
+            await this.sendImage(message, article, img);
+            await wait(800);
         }
     }
 
     async sendAllVideos(message, article) {
         const videos = getArticleVideos(article);
-
-        if (!videos || videos.length === 0) {
-            await message.reply(`🎬 Je suis désolée, je n'ai pas de vidéo de ${article.nom} pour le moment.`);
+        if (!videos.length) {
+            await message.reply(`Aucune video disponible pour ${article.nom}`);
             return;
         }
-
-        await message.reply(`🎬 *${videos.length} vidéo(s) de ${article.nom}*`);
-
-        for (const video of videos) {
-            await this.sendVideo(message, article, video);
-            await wait(2000);
+        await message.reply(`${videos.length} video(s) de ${article.nom}`);
+        for (const vid of videos) {
+            await this.sendVideo(message, article, vid);
+            await wait(1500);
         }
     }
 
-    // ========== PHRASES D'INTRODUCTION POLIES ==========
+    // ========== PHRASES NATURELLES (sans emojis) ==========
     getIntroductionPhrase() {
         const phrases = [
-            `Bonjour et bienvenue chez "Au Pays Des Senteurs" ! Je suis KADI, votre conseillère en produits bien-être. Comment puis-je vous aider aujourd'hui ?`,
-            `Bonjour cher client ! Je suis KADI, votre conseillère de la boutique "Au Pays Des Senteurs". C'est un plaisir de vous recevoir. Que puis-je faire pour vous ?`,
-            `Bonjour ! Je vous souhaite une excellente journée. Ici KADI, votre conseillère en produits bien-être de "Au Pays Des Senteurs". Comment puis-je vous assister ?`,
-            `Bonjour et merci de me contacter ! Je suis KADI, de la boutique "Au Pays Des Senteurs". Je suis ravie de vous aider à découvrir nos produits.`,
-            `Bonjour ! Je suis enchantée de vous accueillir chez "Au Pays Des Senteurs". KADI à votre service, que puis-je vous proposer ?`
+            `Bonjour et bienvenue chez "Au Pays Des Senteurs". Je suis KADI, votre conseillere en produits bien-etre. Comment puis-je vous aider ?`,
+            `Bonjour ! Je suis KADI de la boutique "Au Pays Des Senteurs". En quoi puis-je vous etre utile ?`,
+            `Bonjour, je vous souhaite une bonne journee. Ici KADI, votre conseillere. Que recherchez-vous ?`,
+            `Bonjour et merci de me contacter. Je suis KADI, je vous aide a decouvrir nos produits bien-etre.`,
+            `Bonjour, je suis ravie de vous accueillir chez "Au Pays Des Senteurs". Comment puis-je vous assister ?`
         ];
         return phrases[Math.floor(Math.random() * phrases.length)];
     }
 
-    getReponsePhrase() {
+    getResponsePhrase() {
         const phrases = [
-            `Avec plaisir, laissez-moi vous renseigner sur nos produits de "Au Pays Des Senteurs".`,
-            `Certainement, je vous explique tout de suite. Chez "Au Pays Des Senteurs", nous avons ce qu'il vous faut.`,
-            `Très bien, je vais vous donner toutes les informations sur ce produit de notre boutique.`,
-            `Parfait, je suis là pour ça. "Au Pays Des Senteurs" met à votre disposition ses meilleurs conseils.`,
-            `Avec grand plaisir, voici les détails de ce produit de notre collection.`
+            `Avec plaisir, je vous renseigne sur nos produits.`,
+            `Certainement, je vous explique tout de suite.`,
+            `Tres bien, voici les informations.`,
+            `Parfait, je suis la pour cela.`,
+            `Avec grand plaisir, voici les details.`
         ];
         return phrases[Math.floor(Math.random() * phrases.length)];
     }
 
-    getCommandePhrase() {
+    getCommandPhrase() {
         const phrases = [
-            `Merci beaucoup pour votre commande chez "Au Pays Des Senteurs" !`,
-            `C'est noté, merci pour votre confiance en "Au Pays Des Senteurs" !`,
-            `Super ! Votre commande est bien enregistrée par "Au Pays Des Senteurs".`,
-            `Excellent choix ! Je valide votre commande au nom de "Au Pays Des Senteurs".`,
-            `Merci infiniment ! Je traite votre commande avec grand soin.`
+            `Merci pour votre commande.`,
+            `Commande bien enregistree.`,
+            `Super, je valide votre commande.`,
+            `Excellent choix.`
         ];
         return phrases[Math.floor(Math.random() * phrases.length)];
     }
 
     getRecadragePhrase() {
         const phrases = [
-            `Je vous remercie pour votre intérêt, mais je suis ici pour vous conseiller sur nos produits bien-être de "Au Pays Des Senteurs". Puis-je vous aider à trouver quelque chose dans notre catalogue ?`,
-            `Je suis désolée, je ne peux pas répondre à cette question. En tant que conseillère de "Au Pays Des Senteurs", je suis spécialisée dans nos produits bien-être. Avez-vous besoin d'informations sur un produit ?`,
-            `Je comprends votre curiosité, mais je suis KADI, votre conseillère en produits bien-être. Je vous invite à découvrir notre catalogue "Au Pays Des Senteurs". Que puis-je vous montrer ?`,
-            `Je vous prie de m'excuser, je ne suis pas habilitée à discuter de ce sujet. Je suis là pour vous présenter les merveilleux produits de "Au Pays Des Senteurs". Souhaitez-vous voir notre catalogue ?`
+            `Je suis la pour vous conseiller sur nos produits bien-etre. Puis-je vous aider a trouver un produit ?`,
+            `Desolee, je ne peux repondre a cette question. Je suis specialiste des produits bien-etre. Voulez-vous des informations sur un article ?`,
+            `Je comprends votre curiosite, mais je prefere vous parler de nos produits. Que puis-je vous montrer ?`,
+            `Je vous prie de m'excuser, je ne suis pas habilitee a discuter de ce sujet. Je vous propose de decouvrir notre catalogue.`
         ];
         return phrases[Math.floor(Math.random() * phrases.length)];
     }
 
-    getFinPhrase() {
-        const phrases = [
-            `\n\n🔗 N'hésitez pas à consulter notre catalogue complet : ${this.catalogLink}`,
-            `\n\n🔗 Pour découvrir tous nos produits, visitez notre catalogue : ${this.catalogLink}`,
-            `\n\n🔗 Retrouvez tous nos produits sur notre catalogue : ${this.catalogLink}`,
-            `\n\n🔗 Je vous invite à parcourir notre catalogue : ${this.catalogLink}`
-        ];
-        return phrases[Math.floor(Math.random() * phrases.length)];
-    }
-
-    // ========== TEMPS DE RÉPONSE NATUREL ==========
+    // ========== TEMPS DE REFLEXION ==========
     async think() {
-        const delay = 1500 + Math.random() * 2500;
-        await wait(delay);
+        await wait(2000 + Math.random() * 3000);
     }
 
-    // ========== MESSAGES ==========
+    // ========== GESTION DES MESSAGES ==========
     async handleMessage(message) {
         if (message.from.endsWith('@g.us')) return;
         if (!message.body) return;
-
         if (this.processedMessages.has(message.id.id)) return;
         this.processedMessages.add(message.id.id);
         setTimeout(() => this.processedMessages.delete(message.id.id), 5000);
@@ -405,363 +315,235 @@ class WhatsAppService {
         const senderName = message._data?.notifyName || 'Client';
         const msgLower = msg.toLowerCase();
 
-        log(`📩 ${senderName}: ${msg.substring(0, 60)}`, 'MESSAGE');
+        log(`Message de ${senderName}: ${msg.substring(0, 50)}`);
 
         try {
-            // ========== TEMPS DE RÉFLEXION NATUREL ==========
             await this.think();
 
-            // ========== GESTION DES MESSAGES VOCAUX ==========
+            // Gestion des vocaux
             if (message.type === 'ptt' || message.type === 'audio') {
-                log(`🎤 Message vocal reçu de ${senderName}`, 'INFO');
-                const reponse = `🙏 Je suis vraiment désolée ${senderName}, mais mon téléphone a un problème de son et je ne peux pas lire votre message vocal.
+                await message.reply(`Desolee, je ne peux pas lire les messages vocaux. Pouvez-vous ecrire votre demande ? Merci.`);
+                return;
+            }
 
-📝 Pourriez-vous me l'écrire par texte s'il vous plaît ? Je vous répondrai immédiatement.
+            // Salutations
+            const salutations = ['bonjour', 'salut', 'hello', 'hi', 'bonsoir'];
+            if (salutations.some(s => msgLower.includes(s))) {
+                await message.reply(this.getIntroductionPhrase());
+                return;
+            }
 
-Merci pour votre compréhension ! 🙏
-${this.getFinPhrase()}`;
+            // Merci
+            if (msgLower.includes('merci')) {
+                await message.reply(`Avec plaisir. N'hesitez pas si vous avez d'autres questions.`);
+                return;
+            }
+
+            // Au revoir
+            if (msgLower.includes('au revoir') || msgLower.includes('a plus') || msgLower.includes('bye')) {
+                await message.reply(`Au revoir, a bientot chez "Au Pays Des Senteurs".`);
+                return;
+            }
+
+            // Recadrage hors sujet
+            const motsHors = ['amour', 'relation', 'sexe', 'coucher', 'sortir', 'rendez-vous', 'mariage'];
+            if (motsHors.some(m => msgLower.includes(m)) &&
+                !msgLower.includes('produit') && !msgLower.includes('bien-etre') && !msgLower.includes('encens')) {
+                await message.reply(this.getRecadragePhrase());
+                return;
+            }
+
+            // Commandes
+            if (msgLower === '!catalogue' || msgLower === '!cat') {
+                const categoriesCount = this.catalogue.getCategoriesWithCount();
+                let reponse = `Catalogue "Au Pays Des Senteurs"\n\n`;
+                for (const [cat, count] of Object.entries(categoriesCount)) {
+                    if (count > 0) {
+                        reponse += `${cat} (${count} produit${count > 1 ? 's' : ''})\n`;
+                        const items = this.catalogue.articles.filter(a => a.categorie === cat && a.disponible);
+                        items.slice(0, 5).forEach(a => {
+                            reponse += `  - ${a.nom} : ${a.prix.toLocaleString()} FCFA\n`;
+                        });
+                        if (items.length > 5) reponse += `  ... et ${items.length - 5} autre(s)\n`;
+                        reponse += '\n';
+                    }
+                }
+                reponse += `Pour plus d'infos : "info [nom]". Pour commander, dites "je commande [nom]" ou "voulez-vous passer commande ?"`;
                 await message.reply(reponse);
                 return;
             }
 
-            // ========== SALUTATIONS ==========
-            const salutations = ['bonjour', 'salut', 'coucou', 'hello', 'hi', 'bonsoir', 'bon après-midi', 'bonne journée'];
-            if (salutations.some(s => msgLower.includes(s))) {
-                const intro = this.getIntroductionPhrase();
-                await message.reply(`👋 ${intro}`);
-                return;
-            }
-
-            // ========== MERCI ==========
-            if (msgLower.includes('merci') || msgLower.includes('merci beaucoup')) {
-                const phrases = [
-                    `😊 Avec grand plaisir ! N'hésitez pas si vous avez d'autres questions. Et n'oubliez pas de consulter notre catalogue : ${this.catalogLink}`,
-                    `😊 Je suis ravie d'avoir pu vous aider ! À bientôt chez "Au Pays Des Senteurs". ${this.getFinPhrase()}`,
-                    `😊 C'est un honneur de vous servir. Bonne journée ! ${this.getFinPhrase()}`
-                ];
-                await message.reply(phrases[Math.floor(Math.random() * phrases.length)]);
-                return;
-            }
-
-            // ========== AU REVOIR ==========
-            if (msgLower.includes('au revoir') || msgLower.includes('à plus') || msgLower.includes('bye') || msgLower.includes('à bientôt')) {
-                const phrases = [
-                    `👋 Au revoir cher client ! Prenez soin de vous. ${this.getFinPhrase()}`,
-                    `👋 À très bientôt chez "Au Pays Des Senteurs" ! Je reste à votre disposition. ${this.getFinPhrase()}`,
-                    `👋 Bonne journée, au plaisir de vous revoir chez "Au Pays Des Senteurs" ! ${this.getFinPhrase()}`
-                ];
-                await message.reply(phrases[Math.floor(Math.random() * phrases.length)]);
-                return;
-            }
-
-            // ========== RECADRAGE (HORS CADRE PROFESSIONNEL) ==========
-            const motsHorsCadre = ['amour', 'relation', 'sentiment', 'sexe', 'coucher', 'sortir ensemble', 'rendez-vous', 'beauté', 'jolie', 'mariage', 'femme', 'homme'];
-            if (motsHorsCadre.some(m => msgLower.includes(m)) &&
-                !msgLower.includes('produit') &&
-                !msgLower.includes('bien-être') &&
-                !msgLower.includes('encens') &&
-                !msgLower.includes('parfum')) {
-                const recadrage = this.getRecadragePhrase();
-                await message.reply(`${recadrage}`);
-                return;
-            }
-
-            // ========== COMMANDES ==========
-
-            // !catalogue
-            if (msgLower === '!catalogue' || msgLower === '!cat') {
-                const intro = this.getReponsePhrase();
-                const categoriesCount = this.catalogue.getCategoriesWithCount();
-                let response = `${intro}
-                
-📦 *CATALOGUE "AU PAYS DES SENTEURS"*
-
-`;
-                for (const [cat, count] of Object.entries(categoriesCount)) {
-                    if (count > 0) {
-                        response += `📂 *${cat}* (${count} produit${count > 1 ? 's' : ''})\n`;
-                        const items = this.catalogue.articles.filter(a =>
-                            a.categorie === cat && a.disponible
-                        );
-                        items.slice(0, 5).forEach(a => {
-                            response += `   • ${a.nom} - ${a.prix.toLocaleString()} FCFA\n`;
-                        });
-                        if (items.length > 5) {
-                            response += `   _... et ${items.length - 5} autre(s)_\n`;
-                        }
-                        response += '\n';
-                    }
-                }
-                response += `🔍 Pour plus d'infos : "info [nom]"
-📸 Pour les photos : "images [nom]"
-🎬 Pour la vidéo : "video [nom]"
-${this.getFinPhrase()}`;
-                await message.reply(response);
-                return;
-            }
-
-            // !categories
             if (msgLower === '!categories' || msgLower === '!catégories') {
-                const intro = this.getReponsePhrase();
                 const categoriesCount = this.catalogue.getCategoriesWithCount();
-                let response = `${intro}
-                
-📂 *CATÉGORIES DISPONIBLES*
-
-`;
+                let reponse = `Categories disponibles :\n`;
                 for (const [cat, count] of Object.entries(categoriesCount)) {
-                    if (count > 0) {
-                        response += `📌 ${cat} (${count} produit${count > 1 ? 's' : ''})\n`;
-                    }
+                    if (count > 0) reponse += `- ${cat} (${count} article${count > 1 ? 's' : ''})\n`;
                 }
-                response += `\n🔍 Tapez "!catalogue" pour voir tous les produits.`;
-                await message.reply(response);
+                reponse += `\nTapez "!catalogue" pour voir tous les produits.`;
+                await message.reply(reponse);
                 return;
             }
 
-            // !aide / !help
             if (msgLower === '!aide' || msgLower === '!help') {
-                const intro = this.getIntroductionPhrase();
-                const help = `${intro}
-
-📖 *Commandes disponibles:*
-• !catalogue - Voir tous les produits
-• !categories - Voir les catégories
-• info [nom] - Détails d'un produit
-• prix [nom] - Prix d'un produit
-• images [nom] - Voir les photos
-• video [nom] - Voir la vidéo
-• Je commande [nom] - Passer une commande
-• contact - Coordonnées
-
-💬 Posez-moi une question sur les produits disponibles !
-
-🔗 Catalogue complet : ${this.catalogLink}`;
-                await message.reply(help);
+                const aide = `Commandes disponibles :
+- !catalogue : voir tous les produits
+- !categories : voir les categories
+- info [nom] : details d'un produit
+- images [nom] : photos
+- video [nom] : video (5s)
+- contact : coordonnees
+- Je commande [nom] : passer commande
+- Voulez-vous passer commande ? : pour confirmer`;
+                await message.reply(aide);
                 return;
             }
 
-            // contact
             if (msgLower === '!contact' || msgLower === 'contact') {
-                await message.reply(`📞 *Contactez KADI :*
-☎️ ${this.config.CONTACT_PHONE}
-🏪 "Au Pays Des Senteurs"
-🔗 ${this.catalogLink}`);
+                await message.reply(`Contactez KADI au ${this.config.CONTACT_PHONE}`);
                 return;
             }
 
-            // images [nom]
-            if (msgLower.startsWith('images ') || msgLower === 'images') {
-                const query = msgLower === 'images' ? '' : msg.substring(7);
-                let article = null;
-
-                if (query) {
-                    const results = this.catalogue.search(query);
-                    if (results.length > 0) {
-                        article = results[0];
-                    }
-                } else if (this.lastArticleByUser.has(sender)) {
-                    article = this.lastArticleByUser.get(sender);
-                }
-
-                if (article) {
-                    const intro = this.getReponsePhrase();
-                    await message.reply(`${intro} Voici les photos de ${article.nom}.`);
+            // images/videos
+            if (msgLower.startsWith('images ')) {
+                const query = msg.substring(7);
+                const results = this.catalogue.search(query);
+                if (results.length) {
+                    const article = results[0];
                     await this.sendAllImages(message, article);
                     this.lastArticleByUser.set(sender, article);
                 } else {
-                    await message.reply(`🔍 Pour voir les images, tapez "images [nom du produit]".
-Exemple : "images Encens Sarakatane"`);
+                    await message.reply(`Aucun produit trouve pour "${query}". Essayez "!catalogue" pour voir la liste.`);
                 }
                 return;
             }
 
-            // video [nom]
-            if (msgLower.startsWith('video ') || msgLower === 'video') {
-                const query = msgLower === 'video' ? '' : msg.substring(6);
-                let article = null;
-
-                if (query) {
-                    const results = this.catalogue.search(query);
-                    if (results.length > 0) {
-                        article = results[0];
-                    }
-                } else if (this.lastArticleByUser.has(sender)) {
-                    article = this.lastArticleByUser.get(sender);
-                }
-
-                if (article) {
-                    const intro = this.getReponsePhrase();
-                    await message.reply(`${intro} Voici la vidéo de ${article.nom}.`);
+            if (msgLower.startsWith('video ')) {
+                const query = msg.substring(6);
+                const results = this.catalogue.search(query);
+                if (results.length) {
+                    const article = results[0];
                     await this.sendAllVideos(message, article);
                     this.lastArticleByUser.set(sender, article);
                 } else {
-                    await message.reply(`🔍 Pour voir les vidéos, tapez "video [nom du produit]".
-Exemple : "video Encens Sarakatane"`);
+                    await message.reply(`Aucun produit trouve pour "${query}".`);
                 }
                 return;
             }
 
-            // info [nom] ou prix [nom]
+            // info/prix
             if (msgLower.startsWith('info ') || msgLower.startsWith('prix ')) {
                 const query = msg.substring(5);
                 const results = this.catalogue.search(query);
-
-                if (results.length === 0) {
-                    await message.reply(`🔍 Je suis désolée, je n'ai pas trouvé "${query}".
-📖 Essayez "!catalogue" pour voir tous nos produits.
-${this.getFinPhrase()}`);
+                if (!results.length) {
+                    await message.reply(`Je n'ai pas trouve "${query}". Utilisez "!catalogue" pour voir tous nos produits.`);
                     return;
                 }
-
                 if (results.length === 1) {
-                    const intro = this.getReponsePhrase();
-                    await message.reply(`${intro}\n\n${this.catalogue.formatArticle(results[0])}`);
-                    this.lastArticleByUser.set(sender, results[0]);
+                    const article = results[0];
+                    await message.reply(this.catalogue.formatArticle(article));
+                    this.lastArticleByUser.set(sender, article);
                 } else {
-                    await message.reply(this.catalogue.formatList(results, '🔍 Résultats de recherche'));
+                    await message.reply(this.catalogue.formatList(results, 'Resultats'));
                 }
                 return;
             }
 
-            // ========== COMMANDE / RÉSERVATION ==========
-            if (msgLower.includes('commande') ||
-                msgLower.includes('commander') ||
-                msgLower.includes('je prends') ||
-                msgLower.includes('je veux') ||
-                msgLower.includes('achète') ||
-                msgLower.includes('acheter') ||
-                msgLower.includes('réservation') ||
-                msgLower.includes('réserver')) {
+            // Commande
+            if (msgLower.includes('commande') || msgLower.includes('commander') ||
+                msgLower.includes('je prends') || msgLower.includes('je veux') ||
+                msgLower.includes('acheter') || msgLower.includes('reserver')) {
 
                 let article = null;
                 let quantite = 1;
-
                 const quantiteMatch = msg.match(/(\d+)\s*(encens|kit|poudre|miel|suppositoire|encensoir|semence|lait|cendre)/i);
-                if (quantiteMatch) {
-                    quantite = parseInt(quantiteMatch[1]);
-                }
+                if (quantiteMatch) quantite = parseInt(quantiteMatch[1]);
 
                 const results = this.catalogue.search(msg);
-                if (results.length > 0) {
-                    article = results[0];
-                } else if (this.lastArticleByUser.has(sender)) {
-                    article = this.lastArticleByUser.get(sender);
-                }
+                if (results.length) article = results[0];
+                else if (this.lastArticleByUser.has(sender)) article = this.lastArticleByUser.get(sender);
 
-                if (article) {
-                    const total = article.prix * quantite;
-                    const intro = this.getCommandePhrase();
-
-                    const reponse = `${intro}
-                    
-✅ *COMMANDE ENREGISTRÉE !*
-
-📦 Produit : ${article.nom}
-📦 Quantité : ${quantite}
-💰 Total : ${total.toLocaleString()} FCFA
-📞 Contact : ${this.config.CONTACT_PHONE}
-🏪 "Au Pays Des Senteurs"
-
-🔔 Un conseiller vous contactera sous peu pour confirmer.
-
-⚠️ Paiement à la livraison ou par Orange Money.
-
-Merci pour votre confiance ! 🙏
-${this.getFinPhrase()}`;
-
-                    await message.reply(reponse);
-
-                    // Notification sur votre WhatsApp personnel
-                    const notification = `🔔 *NOUVELLE COMMANDE !*
-
-👤 Client : ${senderName}
-📱 Numéro : ${sender.replace('@c.us', '')}
-🏪 "Au Pays Des Senteurs"
-📦 Produit : ${article.nom}
-📦 Quantité : ${quantite}
-💰 Total : ${total.toLocaleString()} FCFA
-
-📝 Message : "${msg}"
-📍 Livraison : À confirmer avec le client
-
-📅 Date : ${new Date().toLocaleString()}
-
-✅ Commande à traiter !`;
-
-                    await this.client.sendMessage(
-                        `${this.config.MY_PERSONAL_NUMBER}@c.us`,
-                        notification
-                    );
-
-                    this.saveOrder({
-                        client: sender,
-                        clientName: senderName,
-                        produit: article.nom,
-                        quantite: quantite,
-                        total: total,
-                        message: msg,
-                        date: new Date().toISOString()
-                    });
-
-                    if (!this.memory[sender]) this.memory[sender] = [];
-                    this.memory[sender].push(
-                        { role: 'user', content: msg },
-                        { role: 'assistant', content: reponse }
-                    );
-                    this.saveMemory();
-
-                    return;
-                } else {
-                    await message.reply(`🔍 Pour commander, précisez le produit.
-Exemple : "Je commande 3 Encens Sarakatane"
-Ou utilisez "info [nom]" pour voir les détails.
-${this.getFinPhrase()}`);
-                    return;
-                }
-            }
-
-            // ========== COMMANDE ADMIN : !commandes ==========
-            if (msgLower === '!commandes' && sender === `${this.config.MY_PERSONAL_NUMBER}@c.us`) {
-                if (!fs.existsSync(this.ordersPath)) {
-                    await message.reply('📭 Aucune commande enregistrée.');
+                if (!article) {
+                    await message.reply(`Pour commander, indiquez le produit. Exemple : "je commande 3 Encens Sarakatane" ou utilisez "info" d'abord.`);
                     return;
                 }
 
-                const orders = JSON.parse(fs.readFileSync(this.ordersPath, 'utf8'));
-                if (orders.length === 0) {
-                    await message.reply('📭 Aucune commande enregistrée.');
-                    return;
-                }
+                const total = article.prix * quantite;
+                const reponse = `${this.getCommandPhrase()} 
+Produit : ${article.nom}
+Quantite : ${quantite}
+Total : ${total.toLocaleString()} FCFA
+Contact : ${this.config.CONTACT_PHONE}
 
-                let response = '📦 *LISTE DES COMMANDES*\n\n';
-                orders.slice(-10).reverse().forEach((o, i) => {
-                    response += `${i + 1}. ${o.clientName}\n`;
-                    response += `   📦 ${o.produit} x ${o.quantite} = ${o.total.toLocaleString()} FCFA\n`;
-                    response += `   📅 ${new Date(o.date).toLocaleString()}\n\n`;
-                });
+Voulez-vous confirmer cette commande ? (repondez par oui ou non)`;
+                await message.reply(reponse);
 
-                await message.reply(response);
+                // Sauvegarder la commande en attente de confirmation (nous la stockerons dans une map)
+                if (!this.pendingOrders) this.pendingOrders = new Map();
+                this.pendingOrders.set(sender, { article, quantite, total, clientName: senderName, message: msg });
+
                 return;
             }
 
-            // ========== RECHERCHE PAR CATÉGORIE ==========
-            const categories = this.catalogue.categories || [];
-            const categoryMatch = categories.find(c =>
-                msgLower.includes(c.toLowerCase())
-            );
-            if (categoryMatch) {
-                const intro = this.getReponsePhrase();
-                const results = this.catalogue.searchByCategory(categoryMatch);
-                if (results.length > 0) {
-                    await message.reply(`${intro} Voici les produits dans la catégorie "${categoryMatch}".
+            // Confirmation de commande (oui/non)
+            if (msgLower === 'oui' || msgLower === 'o') {
+                if (this.pendingOrders && this.pendingOrders.has(sender)) {
+                    const order = this.pendingOrders.get(sender);
+                    const total = order.article.prix * order.quantite;
 
-${this.catalogue.formatList(results, `📂 ${categoryMatch}`)}`);
+                    // Enregistrer la commande
+                    this.saveOrder({
+                        client: sender,
+                        clientName: order.clientName,
+                        produit: order.article.nom,
+                        quantite: order.quantite,
+                        total: total,
+                        message: order.message,
+                        date: new Date().toISOString()
+                    });
+
+                    // Notifier le vendeur
+                    const notification = `Nouvelle commande !
+Client : ${order.clientName}
+Telephone : ${sender.replace('@c.us', '')}
+Produit : ${order.article.nom}
+Quantite : ${order.quantite}
+Total : ${total.toLocaleString()} FCFA
+Message : "${order.message}"
+Date : ${new Date().toLocaleString()}`;
+                    await this.client.sendMessage(`${this.config.MY_PERSONAL_NUMBER}@c.us`, notification);
+
+                    // Réponse au client
+                    await message.reply(`Commande confirmee et enregistree. Merci ! Un conseiller vous contactera sous peu au ${this.config.CONTACT_PHONE}.`);
+                    this.pendingOrders.delete(sender);
+                    return;
+                } else {
+                    await message.reply(`Je n'ai pas de commande en attente pour vous. Que puis-je faire d'autre ?`);
+                }
+                return;
+            }
+
+            if (msgLower === 'non' || msgLower === 'n') {
+                if (this.pendingOrders && this.pendingOrders.has(sender)) {
+                    this.pendingOrders.delete(sender);
+                    await message.reply(`Commande annulee. N'hesitez pas si vous changez d'avis.`);
+                } else {
+                    await message.reply(`Je n'ai pas de commande en attente. Comment puis-je vous aider ?`);
+                }
+                return;
+            }
+
+            // Recherche par categorie
+            const categories = this.catalogue.categories || [];
+            const catMatch = categories.find(c => msgLower.includes(c.toLowerCase()));
+            if (catMatch) {
+                const results = this.catalogue.searchByCategory(catMatch);
+                if (results.length) {
+                    await message.reply(this.catalogue.formatList(results, `Categorie ${catMatch}`));
                     return;
                 }
             }
 
-            // ========== IA (pour les questions générales) ==========
+            // IA pour les questions generales
             const catalogueContext = this.catalogue.articles
                 .filter(a => a.disponible)
                 .map(a => `- ${a.nom} : ${a.prix ? a.prix.toLocaleString() : 'N/A'} FCFA (${a.categorie})`)
@@ -769,68 +551,45 @@ ${this.catalogue.formatList(results, `📂 ${categoryMatch}`)}`);
 
             const history = this.memory[sender] || [];
             const iaResponse = await this.iaService.getResponse(msg, catalogueContext, history);
-
             if (iaResponse) {
-                let finalResponse = iaResponse;
-                if (!iaResponse.toLowerCase().includes('au pays des senteurs')) {
-                    const intro = this.getReponsePhrase();
-                    finalResponse = `${intro} ${iaResponse}`;
-                }
-                if (!iaResponse.includes(this.catalogLink)) {
-                    finalResponse += this.getFinPhrase();
-                }
-                await message.reply(finalResponse);
-
+                await message.reply(iaResponse);
                 if (!this.memory[sender]) this.memory[sender] = [];
                 this.memory[sender].push(
                     { role: 'user', content: msg },
                     { role: 'assistant', content: iaResponse }
                 );
-                if (this.memory[sender].length > 20) {
-                    this.memory[sender] = this.memory[sender].slice(-20);
-                }
+                if (this.memory[sender].length > 20) this.memory[sender] = this.memory[sender].slice(-20);
                 this.saveMemory();
             } else {
-                const intro = this.getIntroductionPhrase();
-                await message.reply(`${intro}
-
-🔍 Pour voir le catalogue : !catalogue
-📂 Par catégorie : !categories
-📸 Images : images [nom]
-🎬 Vidéos : video [nom]
-📦 Commande : Je commande [nom]
-
-${this.getFinPhrase()}`);
+                // Fallback sans IA
+                await message.reply(`Je vous remercie pour votre message. Pour toute question sur nos produits, n'hesitez pas a me demander. Tapez "!catalogue" pour decouvrir notre gamme.`);
             }
+
         } catch (err) {
-            log(`Erreur traitement message: ${err.message}`, 'ERROR');
-            await message.reply(`❌ Je suis désolée, une erreur s'est produite. Veuillez réessayer ou contacter le support au ${this.config.CONTACT_PHONE}.`);
+            log(`Erreur traitement: ${err.message}`);
+            await message.reply(`Desolee, une erreur s'est produite. Veuillez reessayer ou contacter le support au ${this.config.CONTACT_PHONE}.`);
         }
     }
 
-    // ========== DÉMARRAGE ==========
+    // ========== DEMARRAGE ==========
     async start() {
         try {
-            log('🚀 Démarrage de l\'agent...', 'INFO');
+            log('Demarrage de l agent...');
             this.client = await this.createClient();
             this.setupEvents();
             await this.client.initialize();
             this.setupKeepAlive();
-            log('✅ Agent initialisé', 'SUCCESS');
+            log('Agent initialise');
         } catch (err) {
-            log(`Erreur démarrage: ${err.message}`, 'FATAL');
+            log(`Erreur demarrage: ${err.message}`, 'FATAL');
             setTimeout(() => this.start(), 10000);
         }
     }
 
     async forceReconnect() {
-        log('🔁 Force reconnexion...', 'RECONNECT');
+        log('Force reconnexion...');
         this.isReady = false;
-        try {
-            if (this.client) {
-                await this.client.destroy();
-            }
-        } catch (err) { }
+        try { if (this.client) await this.client.destroy(); } catch (e) { }
         this.client = await this.createClient();
         this.setupEvents();
         await this.client.initialize();
