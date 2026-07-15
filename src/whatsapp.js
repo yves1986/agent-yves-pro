@@ -62,6 +62,7 @@ class WhatsAppService {
                 dataPath: this.sessionPath
             }),
             puppeteer: {
+                executablePath: '/usr/bin/google-chrome-stable',
                 headless: true,
                 args: [
                     '--no-sandbox',
