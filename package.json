@@ -1,14 +1,14 @@
 {
-    "name": "agent-yves-pro",
+    "name": "agent-kadi",
     "version": "2.0.0",
-    "description": "Agent WhatsApp 24/7 avec DeepSeek - Déployé sur Render",
+    "description": "Agent WhatsApp - Au Pays Des Senteurs",
     "main": "src/index.js",
     "scripts": {
         "start": "node src/index.js",
         "dev": "nodemon src/index.js",
         "pm2": "pm2 start ecosystem.config.js",
-        "pm2:stop": "pm2 stop agent-yves-pro",
-        "pm2:logs": "pm2 logs agent-yves-pro"
+        "pm2:stop": "pm2 stop agent-kadi",
+        "pm2:logs": "pm2 logs agent-kadi"
     },
     "dependencies": {
         "axios": "^1.6.0",

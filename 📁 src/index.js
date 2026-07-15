@@ -22,8 +22,9 @@ if (!config.DEEPSEEK_API_KEY) {
     process.exit(1);
 }
 
-log('🚀 AGENT YVES PRO - DÉMARRAGE...', 'INIT');
-log(`📁 Dossier: ${__dirname}`, 'INIT');
+log('🚀 AGENT KADI - DÉMARRAGE...', 'READY');
+log(`🏪 Au Pays Des Senteurs`, 'INFO');
+log(`📁 Dossier: ${__dirname}`, 'INFO');
 
 // ========== INITIALISATION ==========
 const catalogue = new Catalogue();
@@ -33,12 +34,12 @@ const whatsapp = new WhatsAppService(config, catalogue, iaService);
 // ========== SERVEUR HTTP ==========
 const app = express();
 
-// Health check
 app.get('/health', (req, res) => {
     const state = whatsapp.getState();
     res.json({
         status: state,
         connected: state === 'connected',
+        store: 'Au Pays Des Senteurs',
         articles: catalogue.articles.length,
         uptime: process.uptime(),
         memory: process.memoryUsage(),
@@ -46,17 +47,18 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Status
 app.get('/status', (req, res) => {
     res.json({
-        agent: 'AGENT_YVES_PRO',
+        agent: 'KADI',
+        store: 'Au Pays Des Senteurs',
         status: whatsapp.getState(),
         articles: catalogue.articles.length,
+        categories: catalogue.categories,
+        catalogLink: process.env.CATALOG_LINK || 'https://wa.me/c/122990784208917',
         uptime: process.uptime()
     });
 });
 
-// Force reconnect
 app.get('/reconnect', async (req, res) => {
     try {
         await whatsapp.forceReconnect();
@@ -66,44 +68,42 @@ app.get('/reconnect', async (req, res) => {
     }
 });
 
-// Home
 app.get('/', (req, res) => {
     res.send(`
-        <h1>🤖 Agent Yves Pro</h1>
+        <h1>🤖 Agent KADI</h1>
+        <h2>🏪 Au Pays Des Senteurs</h2>
         <p>Status: <strong>${whatsapp.getState()}</strong></p>
         <p>Articles: ${catalogue.articles.length}</p>
+        <p>Catégories: ${catalogue.categories.join(', ')}</p>
         <p>Uptime: ${Math.round(process.uptime() / 60)} minutes</p>
-        <p><a href="/health">Health Check</a> | <a href="/status">Status</a></p>
+        <p><a href="/health">Health Check</a> | <a href="/status">Status</a> | <a href="/reconnect">Reconnect</a></p>
+        <p>🔗 Catalogue: <a href="${process.env.CATALOG_LINK || 'https://wa.me/c/122990784208917'}">${process.env.CATALOG_LINK || 'https://wa.me/c/122990784208917'}</a></p>
     `);
 });
 
-// Démarrer le serveur
 app.listen(config.PORT, () => {
-    log(`🌐 Serveur sur http://localhost:${config.PORT}`, 'SERVER');
-    log(`📊 Health: http://localhost:${config.PORT}/health`, 'SERVER');
-    log(`🔁 Reconnect: http://localhost:${config.PORT}/reconnect`, 'SERVER');
+    log(`🌐 Serveur sur http://localhost:${config.PORT}`, 'INFO');
+    log(`📊 Health: http://localhost:${config.PORT}/health`, 'INFO');
 });
 
-// ========== DÉMARRAGE WHATSAPP ==========
+// ========== DÉMARRAGE ==========
 whatsapp.start();
 
 // ========== GESTION ARRÊT ==========
 process.on('SIGINT', () => {
-    log('🛑 Arrêt demandé (SIGINT)', 'SHUTDOWN');
+    log('🛑 Arrêt demandé', 'INFO');
     process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-    log('🛑 Arrêt demandé (SIGTERM)', 'SHUTDOWN');
+    log('🛑 Arrêt demandé', 'INFO');
     process.exit(0);
 });
 
 process.on('uncaughtException', (err) => {
-    log(`❌ Exception non capturée: ${err.message}`, 'FATAL');
-    // Ne pas quitter
+    log(`Exception non capturée: ${err.message}`, 'ERROR');
 });
 
 process.on('unhandledRejection', (reason) => {
-    log(`❌ Rejet non géré: ${reason}`, 'FATAL');
-    // Ne pas quitter
+    log(`Rejet non géré: ${reason}`, 'ERROR');
 });

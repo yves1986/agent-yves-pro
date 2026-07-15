@@ -1,11 +1,12 @@
 const path = require('path');
-const { readJSON, normalizeText, extractKeywords, formatArticle, log } = require('./utils');
+const { readJSON, normalizeText, extractKeywords, formatArticle, formatList, log } = require('./utils');
 
 class Catalogue {
     constructor() {
         this.dataPath = path.join(__dirname, '../data/catalogue.json');
         this.articles = [];
         this.categories = [];
+        this.catalogLink = process.env.CATALOG_LINK || 'https://wa.me/c/122990784208917';
         this.load();
     }
 
@@ -13,7 +14,7 @@ class Catalogue {
         const data = readJSON(this.dataPath);
         this.articles = data.articles || [];
         this.categories = data.categories || [];
-        log(`${this.articles.length} articles chargés`, 'CATALOGUE');
+        log(`${this.articles.length} articles chargés`, 'SUCCESS');
     }
 
     search(query) {
@@ -28,7 +29,7 @@ class Catalogue {
             if (!article.disponible) return false;
 
             const searchText = normalizeText(
-                `${article.nom} ${article.description} ${article.categorie} ${article.localisation} ${article.mots_cles?.join(' ') || ''}`
+                `${article.nom} ${article.description} ${article.categorie} ${article.localisation || ''} ${article.mots_cles?.join(' ') || ''}`
             );
 
             return keywords.some(keyword => searchText.includes(keyword));
@@ -37,11 +38,7 @@ class Catalogue {
         return results;
     }
 
-    getById(id) {
-        return this.articles.find(a => a.id === id);
-    }
-
-    getByCategory(category) {
+    searchByCategory(category) {
         if (!category) return [];
         const normalizedCat = normalizeText(category);
         return this.articles.filter(a =>
@@ -50,34 +47,37 @@ class Catalogue {
         );
     }
 
-    formatList(articles, limit = 10) {
-        if (!articles || articles.length === 0) {
-            return "📭 Aucun article trouvé";
-        }
+    getById(id) {
+        return this.articles.find(a => a.id === id);
+    }
 
-        const list = articles.slice(0, limit);
-        let msg = `📋 *${list.length} article(s) trouvé(s)*\n\n`;
-
-        list.forEach((a, i) => {
-            msg += `${i + 1}. *${a.nom}*\n`;
-            msg += `   💰 ${a.prix ? a.prix.toLocaleString() : 'N/A'} FCFA\n`;
-            msg += `   📍 ${a.localisation}\n\n`;
+    getCategoriesWithCount() {
+        const counts = {};
+        this.categories.forEach(cat => {
+            const count = this.articles.filter(a =>
+                a.categorie === cat && a.disponible
+            ).length;
+            counts[cat] = count;
         });
-
-        if (articles.length > limit) {
-            msg += `_... et ${articles.length - limit} autre(s)_\n`;
-        }
-        msg += `\n🔍 Pour plus d'infos, tapez "info [nom]"`;
-
-        return msg;
+        return counts;
     }
 
-    formatFull(article) {
-        if (!article) return "❌ Article non trouvé";
-        return formatArticle(article);
+    formatArticle(article) {
+        return formatArticle(article, this.catalogLink);
     }
 
-    // Recharger le catalogue (utile pour les mises à jour)
+    formatList(articles, title = '📋 Résultats') {
+        return formatList(articles, title);
+    }
+
+    getMedia(article) {
+        if (!article) return { images: [], videos: [] };
+        return {
+            images: article.images || [],
+            videos: article.videos || []
+        };
+    }
+
     reload() {
         this.load();
         return this.articles.length;

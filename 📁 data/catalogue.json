@@ -2,42 +2,504 @@
     "articles": [
         {
             "id": 1,
-            "nom": "Villa Faya 5 pièces",
-            "categorie": "Immobilier",
-            "prix": 250000,
-            "prix_location": 50000,
-            "description": "Belle villa avec piscine, 5 chambres, salon, cuisine équipée",
-            "localisation": "Faya, Abidjan",
+            "nom": "Encens Sarakatane",
+            "categorie": "Encens",
+            "prix": 5000,
+            "description": "Encens pour parfumer la maison, vêtements, bureau. Odeur douce et envoûtante.",
             "disponible": true,
-            "images": [],
+            "images": [
+                "encens_sarakatane.jpg"
+            ],
+            "videos": [
+                "encens_sarakatane_5s.mp4"
+            ],
             "mots_cles": [
-                "villa",
-                "faya",
-                "5 pièces",
-                "piscine"
+                "encens",
+                "sarakatane",
+                "parfum",
+                "maison",
+                "vêtements"
             ]
         },
         {
             "id": 2,
-            "nom": "Appartement Angré 3 pièces",
-            "categorie": "Immobilier",
-            "prix": 85000,
-            "prix_location": 35000,
-            "description": "Appartement moderne, 3 chambres, salon, cuisine",
-            "localisation": "Angré, Abidjan",
+            "nom": "Encens Nafy ou Rouge",
+            "categorie": "Encens",
+            "prix": 7000,
+            "description": "Encens pour parfumer la maison. Odeur intense et persistante.",
             "disponible": true,
-            "images": [],
+            "images": [
+                "encens_nafy.jpg"
+            ],
+            "videos": [
+                "encens_nafy_5s.mp4"
+            ],
             "mots_cles": [
-                "appartement",
-                "angré",
-                "3 pièces"
+                "encens",
+                "nafy",
+                "rouge",
+                "parfum",
+                "maison"
+            ]
+        },
+        {
+            "id": 3,
+            "nom": "Encens Tchadien Boulette",
+            "categorie": "Encens",
+            "prix": 6000,
+            "description": "Encens pour parfumer la maison et les vêtements. Format boulette pratique.",
+            "disponible": true,
+            "images": [
+                "encens_tchadien_boulette.jpg"
+            ],
+            "videos": [
+                "encens_tchadien_5s.mp4"
+            ],
+            "mots_cles": [
+                "encens",
+                "tchadien",
+                "boulette",
+                "parfum"
+            ]
+        },
+        {
+            "id": 4,
+            "nom": "Encens Gueni",
+            "categorie": "Encens",
+            "prix": 3000,
+            "description": "Encens pour la maison et vêtements. Gueni sec disponible pour draps, rideaux, douches à partir de 2000f.",
+            "disponible": true,
+            "images": [
+                "encens_gueni.jpg"
+            ],
+            "videos": [
+                "encens_gueni_5s.mp4"
+            ],
+            "mots_cles": [
+                "encens",
+                "gueni",
+                "parfum",
+                "maison",
+                "vêtements"
+            ]
+        },
+        {
+            "id": 5,
+            "nom": "Semence Royale",
+            "categorie": "Santé & Bien-être",
+            "prix": 10000,
+            "description": "Augmente la quantité et la qualité du sperme. Booste la fertilité. Traite toutes maladies liées au sperme et spermatozoïdes.",
+            "disponible": true,
+            "images": [
+                "semence_royale.jpg"
+            ],
+            "videos": [
+                "semence_royale_5s.mp4"
+            ],
+            "mots_cles": [
+                "semence",
+                "royale",
+                "fertilité",
+                "sperme",
+                "homme"
+            ]
+        },
+        {
+            "id": 6,
+            "nom": "Miel Éveil de Femme",
+            "categorie": "Aphrodisiaque",
+            "prix": 5000,
+            "description": "Aphrodisiaque féminin. Lubrifie la femme, donne envie, fait ressentir du plaisir lors des rapports.",
+            "disponible": true,
+            "images": [
+                "miel_eveil_femme.jpg"
+            ],
+            "videos": [
+                "miel_eveil_femme_5s.mp4"
+            ],
+            "mots_cles": [
+                "miel",
+                "éveil",
+                "femme",
+                "aphrodisiaque",
+                "plaisir"
+            ]
+        },
+        {
+            "id": 7,
+            "nom": "Encens Tchadien Sandal",
+            "categorie": "Encens",
+            "prix": 5000,
+            "description": "Encens pour parfumer la maison et les vêtements. Odeur boisée et raffinée.",
+            "disponible": true,
+            "images": [
+                "encens_sandal.jpg"
+            ],
+            "videos": [
+                "encens_sandal_5s.mp4"
+            ],
+            "mots_cles": [
+                "encens",
+                "sandal",
+                "tchadien",
+                "parfum"
+            ]
+        },
+        {
+            "id": 8,
+            "nom": "Poudre Fontaine d'Or",
+            "categorie": "Aphrodisiaque",
+            "prix": 3000,
+            "description": "Aphrodisiaque féminin. Lubrifie la femme, donne envie, fait ressentir du plaisir lors des rapports.",
+            "disponible": true,
+            "images": [
+                "poudre_fontaine_or.jpg"
+            ],
+            "videos": [
+                "poudre_fontaine_or_5s.mp4"
+            ],
+            "mots_cles": [
+                "poudre",
+                "fontaine",
+                "or",
+                "aphrodisiaque",
+                "femme"
+            ]
+        },
+        {
+            "id": 9,
+            "nom": "Kit d'Encens",
+            "categorie": "Encens",
+            "prix": 9000,
+            "description": "Composé d'encens coquette, Sarakatane, 30 min de silence. Promo à 9000f au lieu de 10000f.",
+            "disponible": true,
+            "images": [
+                "kit_encens.jpg"
+            ],
+            "videos": [
+                "kit_encens_5s.mp4"
+            ],
+            "mots_cles": [
+                "kit",
+                "encens",
+                "coquette",
+                "sarakatane",
+                "promo"
+            ]
+        },
+        {
+            "id": 10,
+            "nom": "Encens 30 Min de Silence",
+            "categorie": "Encens",
+            "prix": 6000,
+            "description": "Encens pour parfumer la maison. Odeur apaisante et relaxante.",
+            "disponible": true,
+            "images": [
+                "encens_30min_silence.jpg"
+            ],
+            "videos": [
+                "encens_30min_silence_5s.mp4"
+            ],
+            "mots_cles": [
+                "encens",
+                "30 min",
+                "silence",
+                "parfum"
+            ]
+        },
+        {
+            "id": 11,
+            "nom": "Encens Persil",
+            "categorie": "Encens",
+            "prix": 5000,
+            "description": "Encens pour parfumer la maison. Odeur fraîche et naturelle.",
+            "disponible": true,
+            "images": [
+                "encens_persil.jpg"
+            ],
+            "videos": [
+                "encens_persil_5s.mp4"
+            ],
+            "mots_cles": [
+                "encens",
+                "persil",
+                "parfum",
+                "maison"
+            ]
+        },
+        {
+            "id": 12,
+            "nom": "Poudre Magique Aisselles",
+            "categorie": "Hygiène",
+            "prix": 2500,
+            "description": "Poudre pour les aisselles. Pour personnes qui transpirent beaucoup, qui ont des aisselles fragiles ou qui ne supportent pas les déodorants.",
+            "disponible": true,
+            "images": [
+                "poudre_magique_aisselles.jpg"
+            ],
+            "videos": [
+                "poudre_magique_5s.mp4"
+            ],
+            "mots_cles": [
+                "poudre",
+                "magique",
+                "aisselles",
+                "transpiration",
+                "hygiène"
+            ]
+        },
+        {
+            "id": 13,
+            "nom": "Suppositoire Africain",
+            "categorie": "Santé & Bien-être",
+            "prix": 3000,
+            "description": "Pour douleurs de dos, mal des hanches, plantes des pieds qui chauffent, courbatures. Le paquet à 3000f, 2 à 5500f.",
+            "disponible": true,
+            "images": [
+                "suppositoire_africain.jpg"
+            ],
+            "videos": [
+                "suppositoire_africain_5s.mp4"
+            ],
+            "mots_cles": [
+                "suppositoire",
+                "africain",
+                "douleur",
+                "dos",
+                "hanches"
+            ]
+        },
+        {
+            "id": 14,
+            "nom": "Encens Anti-Mauvais Esprits",
+            "categorie": "Encens",
+            "prix": 3000,
+            "description": "Encens contre les mauvais esprits, les mauvaises personnes et les sorciers.",
+            "disponible": true,
+            "images": [
+                "encens_anti_mauvais_esprits.jpg"
+            ],
+            "videos": [
+                "encens_anti_mauvais_5s.mp4"
+            ],
+            "mots_cles": [
+                "encens",
+                "anti",
+                "mauvais",
+                "esprits",
+                "protection"
+            ]
+        },
+        {
+            "id": 15,
+            "nom": "Kit Pitchoorr",
+            "categorie": "Aphrodisiaque",
+            "prix": 3500,
+            "description": "Aphrodisiaque féminin. Lubrifie la femme, donne envie, fait ressentir du plaisir lors des rapports. Composé de mélanges de feuilles et caramel.",
+            "disponible": true,
+            "images": [
+                "kit_pitchoorr.jpg"
+            ],
+            "videos": [
+                "kit_pitchoorr_5s.mp4"
+            ],
+            "mots_cles": [
+                "kit",
+                "pitchoorr",
+                "aphrodisiaque",
+                "femme",
+                "plaisir"
+            ]
+        },
+        {
+            "id": 16,
+            "nom": "Lait de Séduction",
+            "categorie": "Aphrodisiaque",
+            "prix": 5000,
+            "description": "Pommade parfumée à odeur attirante et envoûtante. Met l'harmonie, la joie et la paix dans le couple. Femme et homme, tout le monde utilise.",
+            "disponible": true,
+            "images": [
+                "lait_seduction.jpg"
+            ],
+            "videos": [
+                "lait_seduction_5s.mp4"
+            ],
+            "mots_cles": [
+                "lait",
+                "séduction",
+                "pommade",
+                "couple",
+                "harmonie"
+            ]
+        },
+        {
+            "id": 17,
+            "nom": "Encensoir à Charbon Noir",
+            "categorie": "Encensoirs",
+            "prix": 12000,
+            "description": "Encensoir à charbon noir. Design élégant et moderne.",
+            "disponible": true,
+            "images": [
+                "encensoir_noir.jpg"
+            ],
+            "videos": [
+                "encensoir_noir_5s.mp4"
+            ],
+            "mots_cles": [
+                "encensoir",
+                "charbon",
+                "noir",
+                "design"
+            ]
+        },
+        {
+            "id": 18,
+            "nom": "Encensoir à Charbon Marron",
+            "categorie": "Encensoirs",
+            "prix": 12000,
+            "description": "Encensoir à charbon marron. Style classique et raffiné.",
+            "disponible": true,
+            "images": [
+                "encensoir_marron.jpg"
+            ],
+            "videos": [
+                "encensoir_marron_5s.mp4"
+            ],
+            "mots_cles": [
+                "encensoir",
+                "charbon",
+                "marron"
+            ]
+        },
+        {
+            "id": 19,
+            "nom": "Encensoir à Charbon Marron Doré",
+            "categorie": "Encensoirs",
+            "prix": 9000,
+            "description": "Encensoir à charbon marron doré. Élégant et abordable.",
+            "disponible": true,
+            "images": [
+                "encensoir_marron_dore.jpg"
+            ],
+            "videos": [
+                "encensoir_marron_dore_5s.mp4"
+            ],
+            "mots_cles": [
+                "encensoir",
+                "charbon",
+                "marron",
+                "doré"
+            ]
+        },
+        {
+            "id": 20,
+            "nom": "Encensoir à Charbon Marron Or",
+            "categorie": "Encensoirs",
+            "prix": 10000,
+            "description": "Encensoir à charbon marron or. Luxueux et raffiné.",
+            "disponible": true,
+            "images": [
+                "encensoir_marron_or.jpg"
+            ],
+            "videos": [
+                "encensoir_marron_or_5s.mp4"
+            ],
+            "mots_cles": [
+                "encensoir",
+                "charbon",
+                "marron",
+                "or"
+            ]
+        },
+        {
+            "id": 21,
+            "nom": "Encensoir Électrique Or",
+            "categorie": "Encensoirs",
+            "prix": 5000,
+            "description": "Encensoir électrique or. Pratique et moderne.",
+            "disponible": true,
+            "images": [
+                "encensoir_electrique_or.jpg"
+            ],
+            "videos": [
+                "encensoir_electrique_or_5s.mp4"
+            ],
+            "mots_cles": [
+                "encensoir",
+                "électrique",
+                "or",
+                "moderne"
+            ]
+        },
+        {
+            "id": 22,
+            "nom": "Kit Homme",
+            "categorie": "Santé & Bien-être",
+            "prix": 20000,
+            "description": "Pour problèmes de faiblesses sexuelles, éjaculation précoce, érections molles, impuissance sexuelle. Composé de médicaments buvables et pour lavement.",
+            "disponible": true,
+            "images": [
+                "kit_homme.jpg"
+            ],
+            "videos": [
+                "kit_homme_5s.mp4"
+            ],
+            "mots_cles": [
+                "kit",
+                "homme",
+                "faiblesse",
+                "sexuelle",
+                "érection"
+            ]
+        },
+        {
+            "id": 23,
+            "nom": "Encensoir Électrique Blanc Noir",
+            "categorie": "Encensoirs",
+            "prix": 9000,
+            "description": "Encensoir électrique blanc noir plat. Design épuré et moderne.",
+            "disponible": true,
+            "images": [
+                "encensoir_electrique_blanc_noir.jpg"
+            ],
+            "videos": [
+                "encensoir_electrique_blanc_noir_5s.mp4"
+            ],
+            "mots_cles": [
+                "encensoir",
+                "électrique",
+                "blanc",
+                "noir",
+                "plat"
+            ]
+        },
+        {
+            "id": 24,
+            "nom": "Cendre Parfumée",
+            "categorie": "Accessoires",
+            "prix": 1000,
+            "description": "Cendre parfumée pour les encensoirs à charbon. Sachet de 1000f.",
+            "disponible": true,
+            "images": [
+                "cendre_parfumee.jpg"
+            ],
+            "videos": [
+                "cendre_parfumee_5s.mp4"
+            ],
+            "mots_cles": [
+                "cendre",
+                "parfumée",
+                "encensoir",
+                "charbon"
             ]
         }
     ],
     "categories": [
-        "Immobilier",
-        "Électronique",
-        "Véhicules",
-        "Mode"
+        "Encens",
+        "Aphrodisiaque",
+        "Santé & Bien-être",
+        "Hygiène",
+        "Encensoirs",
+        "Accessoires"
     ]
 }

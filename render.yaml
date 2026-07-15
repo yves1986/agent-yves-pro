@@ -1,7 +1,7 @@
 services:
   - type: web
-    name: agent-yves-pro
-    runtime: nodegit 
+    name: agent-kadi
+    runtime: node
     buildCommand: npm install
     startCommand: npm start
     plan: free
@@ -13,5 +13,7 @@ services:
         value: 0140505518
       - key: MY_PERSONAL_NUMBER
         value: 2250710076550
+      - key: CATALOG_LINK
+        value: https://wa.me/c/122990784208917
       - key: PORT
-        value: 3000git 
+        value: 3000

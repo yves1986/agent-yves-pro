@@ -2,8 +2,16 @@ node_modules/
 .wwebjs_auth/
 .wwebjs_cache/
 data/memory.json
+data/orders.json
 .env
 *.log
 .DS_Store
 qr.png
 qr.txt
+media/images/
+media/videos/
+*.mp4
+*.jpg
+*.jpeg
+*.png
+*.webp
