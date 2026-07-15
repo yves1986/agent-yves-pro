@@ -84,22 +84,22 @@ class WhatsAppService {
 
     // ========== ATTACHEMENT DES ÉVÉNEMENTS ==========
     setupEvents() {
-        this.client.on('qr', qr => {
-            log('📱 QR Code généré - Scannez avec WhatsApp', 'INFO');
-            console.log('\n📱 SCANNEZ CE QR CODE :');
-            qrcode.generate(qr, { small: true });
-            console.log('\n⏳ En attente de connexion...\n');
+      this.client.on('qr', qr => {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qr)}`;
+    
+    log('📱 QR Code généré', 'INFO');
+    console.log('\n📱 SCANNEZ CE QR CODE :');
+    
+    // Petit QR Code (déjà petit grâce à { small: true })
+    qrcode.generate(qr, { small: true });
+    
+    console.log(`\n👉 Ou ouvrez ce lien : ${qrUrl}`);
+    console.log('⏳ En attente de connexion...\n');
 
-            try {
-                fs.writeFileSync(path.join(__dirname, '../qr.txt'), qr);
-            } catch (err) { }
-        });
-
-        this.client.on('authenticated', () => {
-            this.isReady = true;
-            this.reconnectAttempts = 0;
-            log('🔐 Authentification réussie', 'SUCCESS');
-        });
+    try {
+        fs.writeFileSync(path.join(__dirname, '../qr.txt'), qr);
+    } catch (err) { }
+});
 
         this.client.on('ready', () => {
             this.isReady = true;
