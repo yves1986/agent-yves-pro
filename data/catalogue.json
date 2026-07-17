@@ -5,7 +5,7 @@
             "nom": "Encens Sarakatane",
             "categorie": "Encens",
             "prix": 5000,
-            "description": "Encens pour parfumer la maison, vêtements, bureau. Odeur douce et envoûtante.",
+            "description": "Encens pour parfumer la maison, vêtements, bureau. Odeur douce et envoûtante.\nPosologie : on le brûle à l'aide d'un encensoir électrique ou avec du charbon industriel ou charbon de bois .",
             "disponible": true,
             "images": [
                 "encens_sarakatane.jpg"
@@ -26,7 +26,7 @@
             "nom": "Encens Nafy ou Rouge",
             "categorie": "Encens",
             "prix": 7000,
-            "description": "Encens pour parfumer la maison. Odeur intense et persistante.",
+            "description": "Encens pour parfumer la maison. Odeur intense et persistante.\nPosologie : on le brûle à l'aide d'un encensoir électrique ou avec du charbon industriel ou charbon de bois .",
             "disponible": true,
             "images": [
                 "encens_nafy.jpg"
@@ -47,7 +47,7 @@
             "nom": "Encens Tchadien Boulette",
             "categorie": "Encens",
             "prix": 6000,
-            "description": "Encens pour parfumer la maison et les vêtements. Format boulette pratique.",
+            "description": "Encens pour parfumer la maison et les vêtements. Format boulette pratique.\nPosologie : on le brûle à l'aide d'un encensoir électrique ou avec du charbon industriel ou charbon de bois .",
             "disponible": true,
             "images": [
                 "encens_tchadien_boulette.jpg"
@@ -67,7 +67,7 @@
             "nom": "Encens Gueni",
             "categorie": "Encens",
             "prix": 3000,
-            "description": "Encens pour la maison et vêtements. Gueni sec disponible pour draps, rideaux, douches à partir de 2000f.",
+            "description": "Encens pour la maison et vêtements. Gueni sec disponible pour draps, rideaux, douches à partir de 2000f.\nPosologie : on le brûle à l'aide d'un encensoir électrique ou avec du charbon industriel ou charbon de bois .",
             "disponible": true,
             "images": [
                 "encens_gueni.jpg"
@@ -88,7 +88,7 @@
             "nom": "Semence Royale",
             "categorie": "Santé & Bien-être",
             "prix": 10000,
-            "description": "Augmente la quantité et la qualité du sperme. Booste la fertilité. Traite toutes maladies liées au sperme et spermatozoïdes.",
+            "description": "Augmente la quantité et la qualité du sperme. Booste la fertilité. Traite toutes maladies liées au sperme et spermatozoïdes.\nPosologie : on prend 2 cuillère à café de la poudre et mettre dans demi verre de bonnet rouge, ou lait candia ou lait de vache pour boire à faire matin et soir.\nPour la tisane : un peu du médicament et un peu du tchongon mixer les 2 ou piler ou écraser pour mettre dans demi verre d'eau pour boire, à faire matin et soir.",
             "disponible": true,
             "images": [
                 "semence_royale.jpg"
@@ -109,7 +109,7 @@
             "nom": "Miel Éveil de Femme",
             "categorie": "Aphrodisiaque",
             "prix": 5000,
-            "description": "Aphrodisiaque féminin. Lubrifie la femme, donne envie, fait ressentir du plaisir lors des rapports.",
+            "description": "Aphrodisiaque féminin. Lubrifie la femme, donne envie, fait ressentir du plaisir lors des rapports.\nPosologie: une cuillère à soupe du miel à mettre dans un peu d'eau tiède à boire, à faire matin et soir le jour des rapports sexuels.",
             "disponible": true,
             "images": [
                 "miel_eveil_femme.jpg"
@@ -130,7 +130,7 @@
             "nom": "Encens Tchadien Sandal",
             "categorie": "Encens",
             "prix": 5000,
-            "description": "Encens pour parfumer la maison et les vêtements. Odeur boisée et raffinée.",
+            "description": "Encens pour parfumer la maison et les vêtements. Odeur boisée et raffinée.\nPosologie : on le brûle à l'aide d'un encensoir électrique ou avec du charbon industriel ou charbon de bois.",
             "disponible": true,
             "images": [
                 "encens_sandal.jpg"
@@ -150,7 +150,7 @@
             "nom": "Poudre Fontaine d'Or",
             "categorie": "Aphrodisiaque",
             "prix": 3000,
-            "description": "Aphrodisiaque féminin. Lubrifie la femme, donne envie, fait ressentir du plaisir lors des rapports.",
+            "description": "Aphrodisiaque féminin. Lubrifie la femme, donne envie, fait ressentir du plaisir lors des rapports.\nPosologie: une cuillère à soupe de la poudre à mettre dans un peu d'eau tiède ou lait tiède ou yaourt non glacé à boire, à faire matin et soir le jour des rapports sexuels.",
             "disponible": true,
             "images": [
                 "poudre_fontaine_or.jpg"
@@ -192,7 +192,7 @@
             "nom": "Encens 30 Min de Silence",
             "categorie": "Encens",
             "prix": 6000,
-            "description": "Encens pour parfumer la maison. Odeur apaisante et relaxante.",
+            "description": "Encens pour parfumer la maison. Odeur apaisante et relaxante.\nPosologie : on le brûle à l'aide d'un encensoir électrique ou avec du charbon industriel ou charbon de bois.",
             "disponible": true,
             "images": [
                 "encens_30min_silence.jpg"
@@ -212,7 +212,7 @@
             "nom": "Encens Persil",
             "categorie": "Encens",
             "prix": 5000,
-            "description": "Encens pour parfumer la maison. Odeur fraîche et naturelle.",
+            "description": "Encens pour parfumer la maison. Odeur fraîche et naturelle.\nPosologie : on le brûle à l'aide d'un encensoir électrique ou avec du charbon industriel ou charbon de bois.",
             "disponible": true,
             "images": [
                 "encens_persil.jpg"
@@ -231,8 +231,8 @@
             "id": 12,
             "nom": "Poudre Magique Aisselles",
             "categorie": "Hygiène",
-            "prix": 2500,
-            "description": "Poudre pour les aisselles. Pour personnes qui transpirent beaucoup, qui ont des aisselles fragiles ou qui ne supportent pas les déodorants.",
+            "prix": 2000,
+            "description": "Poudre pour les aisselles. Pour personnes qui transpirent beaucoup, qui ont des aisselles fragiles ou qui ne supportent pas les déodorants.\nPosologie : prendre une pincée et frotter dans les aisselles avant de s'habiller après le bain.",
             "disponible": true,
             "images": [
                 "poudre_magique_aisselles.jpg"
@@ -253,7 +253,7 @@
             "nom": "Suppositoire Africain",
             "categorie": "Santé & Bien-être",
             "prix": 3000,
-            "description": "Pour douleurs de dos, mal des hanches, plantes des pieds qui chauffent, courbatures. Le paquet à 3000f, 2 à 5500f.",
+            "description": "Pour douleurs de dos, mal des hanches, plantes des pieds qui chauffent, courbatures. Le paquet à 3000f, 2 à 5500f.\nPosologie : chaque soir au couché, prendre une boule du suppositoire, frotté un peu de beurre de karité et insérer dans le rectum, posé jusqu'à dedans, ne laissez pas au bord sinon ça donnera l'envie d'aller à la selle.",
             "disponible": true,
             "images": [
                 "suppositoire_africain.jpg"
@@ -274,7 +274,7 @@
             "nom": "Encens Anti-Mauvais Esprits",
             "categorie": "Encens",
             "prix": 3000,
-            "description": "Encens contre les mauvais esprits, les mauvaises personnes et les sorciers.",
+            "description": "Encens contre les mauvais esprits, les mauvaises personnes et les sorciers.\nPosologie : on le brûle dans un encensoir à charbon, mettre sur le feu à brûler chaque soir, possibilité de s'arrêter dessus pour faire monter la fumée sur soit.",
             "disponible": true,
             "images": [
                 "encens_anti_mauvais_esprits.jpg"
@@ -295,7 +295,7 @@
             "nom": "Kit Pitchoorr",
             "categorie": "Aphrodisiaque",
             "prix": 3500,
-            "description": "Aphrodisiaque féminin. Lubrifie la femme, donne envie, fait ressentir du plaisir lors des rapports. Composé de mélanges de feuilles et caramel.",
+            "description": "Aphrodisiaque féminin. Lubrifie la femme, donne envie, fait ressentir du plaisir lors des rapports. Composé de mélanges de feuilles et caramel.\nPosologie : on prend un peu des mélanges de feuilles + un peu du bonbons caramel à préparer ensemble et boire le matin et le soir le jour des rapports sexuels.",
             "disponible": true,
             "images": [
                 "kit_pitchoorr.jpg"
@@ -316,7 +316,7 @@
             "nom": "Lait de Séduction",
             "categorie": "Aphrodisiaque",
             "prix": 5000,
-            "description": "Pommade parfumée à odeur attirante et envoûtante. Met l'harmonie, la joie et la paix dans le couple. Femme et homme, tout le monde utilise.",
+            "description": "Pommade parfumée à odeur attirante et envoûtante. Mets l'harmonie, la joie et la paix dans le couple. Femme et homme, tout le monde utilise.\nPosologie : pour ceux qui vivent ensemble on se pommade avec avant d'approcher la personne ou avant d'aller au lit, pour ceux qui ne vivent pas ensemble mettent avant d'aller chez leur chéri et ceux qui n'ont personne mettent avant d'aller partout où ils veulent.",
             "disponible": true,
             "images": [
                 "lait_seduction.jpg"
@@ -436,7 +436,7 @@
             "nom": "Kit Homme",
             "categorie": "Santé & Bien-être",
             "prix": 20000,
-            "description": "Pour problèmes de faiblesses sexuelles, éjaculation précoce, érections molles, impuissance sexuelle. Composé de médicaments buvables et pour lavement.",
+            "description": "Pour problèmes de faiblesses sexuelles, éjaculation précoce, érections molles, impuissance sexuelle. Composé de médicaments buvables et pour lavement.\nAprès réception vous envoyez les images 1 à 1 enfin qu'on vous envoie les posologies par vocal bien détaillé.",
             "disponible": true,
             "images": [
                 "kit_homme.jpg"
@@ -478,7 +478,7 @@
             "nom": "Cendre Parfumée",
             "categorie": "Accessoires",
             "prix": 1000,
-            "description": "Cendre parfumée pour les encensoirs à charbon. Sachet de 1000f.",
+            "description": "Cendre parfumée pour les encensoirs à charbon. Sachet de 1000f. Utilisation : renversez dans son encensoir à charbon, il donne une très bonne odeur même sans encens, quand on ajoute encens dessus ça donne 2 différentes odeurs.",
             "disponible": true,
             "images": [
                 "cendre_parfumee.jpg"

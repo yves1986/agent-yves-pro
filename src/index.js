@@ -18,12 +18,15 @@ if (!config.DEEPSEEK_API_KEY) {
     process.exit(1);
 }
 
-log('AGENT KADI - DEMARRAGE');
+log(`Clé API DeepSeek ${config.DEEPSEEK_API_KEY ? 'PRÉSENTE ✅' : 'MANQUANTE ❌'}`);
+log('AGENT KADI - DÉMARRAGE');
+
 const catalogue = new Catalogue();
 const iaService = new IAService(config.DEEPSEEK_API_KEY, config.DEEPSEEK_API_URL);
 const whatsapp = new WhatsAppService(config, catalogue, iaService);
 
 const app = express();
+
 app.get('/health', (req, res) => {
     res.json({
         status: whatsapp.getState(),

@@ -5,29 +5,34 @@ class IAService {
     constructor(apiKey, apiUrl) {
         this.apiKey = apiKey;
         this.apiUrl = apiUrl || 'https://api.deepseek.com/v1/chat/completions';
-        this.maxRetries = 3;
-        this.retryDelay = 2000;
+        this.maxRetries = 2;
+        this.retryDelay = 1000;
     }
 
     async getResponse(userMessage, catalogueContext, history = []) {
-        let attempts = 0;
-        while (attempts < this.maxRetries) {
+        log(`[DeepSeek] Appel avec message: "${userMessage.substring(0, 40)}..."`);
+
+        if (!this.apiKey) {
+            log('[DeepSeek] Clé API manquante !', 'ERROR');
+            return null;
+        }
+
+        for (let attempt = 0; attempt < this.maxRetries; attempt++) {
             try {
-                const systemPrompt = `Tu es KADI, conseillere commerciale pour la boutique "Au Pays Des Senteurs". 
-Reponds de maniere breve, precise et naturelle, sans emojis. Propose les produits du catalogue quand c'est pertinent. 
-Pour les commandes, demande confirmation : "Voulez-vous passer commande ?", "Combien de ... ?". 
-Oriente vers le contact ${process.env.CONTACT_PHONE || '0505730455'}. Reste professionnelle et courtoise.
-Catalogue : ${catalogueContext}`;
+                const systemPrompt = `Tu es KADI, conseillère chez Au Pays Des Senteurs. Réponds en 1-2 phrases, sans emojis. 
+Si on te demande un produit, donne son prix et une description rapide. 
+Si c'est une commande, demande confirmation : "Confirmez-vous cette commande ?".
+Catalogue: ${catalogueContext}`;
 
                 const messages = [{ role: 'system', content: systemPrompt }];
-                const recent = history.slice(-10);
+                const recent = history.slice(-8);
                 for (const m of recent) messages.push(m);
                 messages.push({ role: 'user', content: userMessage });
 
                 const response = await axios.post(this.apiUrl, {
                     model: 'deepseek-chat',
                     messages: messages,
-                    temperature: 0.7,
+                    temperature: 0.6,
                     max_tokens: 150,
                     stream: false
                 }, {
@@ -37,17 +42,23 @@ Catalogue : ${catalogueContext}`;
                     },
                     timeout: 15000
                 });
-                if (response.data?.choices?.[0]) {
-                    return response.data.choices[0].message.content;
-                }
-                throw new Error('Reponse invalide');
+
+                const content = response.data.choices[0].message.content;
+                log(`[DeepSeek] Réponse: "${content.substring(0, 50)}..."`);
+                return content;
+
             } catch (error) {
-                attempts++;
-                log(`Tentative ${attempts}/${this.maxRetries} echouee: ${error.message}`);
-                if (attempts < this.maxRetries) await wait(this.retryDelay * attempts);
-                else log(`Echec apres ${this.maxRetries} tentatives`);
+                log(`[DeepSeek] Tentative ${attempt + 1} échouée: ${error.message}`, 'ERROR');
+                if (error.response) {
+                    log(`[DeepSeek] Status: ${error.response.status} - ${JSON.stringify(error.response.data)}`, 'ERROR');
+                }
+                if (attempt < this.maxRetries - 1) {
+                    await new Promise(r => setTimeout(r, this.retryDelay));
+                }
             }
         }
+
+        log('[DeepSeek] Échec après toutes les tentatives', 'ERROR');
         return null;
     }
 }

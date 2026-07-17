@@ -13,7 +13,7 @@ class Catalogue {
         const data = readJSON(this.dataPath);
         this.articles = data.articles || [];
         this.categories = data.categories || [];
-        log(`${this.articles.length} articles charges`);
+        log(`${this.articles.length} articles chargés`);
     }
 
     search(query) {
@@ -46,7 +46,7 @@ class Catalogue {
     }
 
     formatArticle(article) { return formatArticle(article); }
-    formatList(articles, title = 'Resultats') { return formatList(articles, title); }
+    formatList(articles, title = 'Résultats') { return formatList(articles, title); }
 
     getMedia(article) {
         if (!article) return { images: [], videos: [] };

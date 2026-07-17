@@ -5,9 +5,7 @@ function readJSON(filePath, defaultValue = {}) {
     try {
         if (!fs.existsSync(filePath)) return defaultValue;
         return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    } catch {
-        return defaultValue;
-    }
+    } catch { return defaultValue; }
 }
 
 function writeJSON(filePath, data) {
@@ -31,41 +29,32 @@ function extractKeywords(text) {
 
 function formatArticle(article) {
     if (!article) return 'Article non trouvé';
-    let msg = `${article.nom}\n`;
-    msg += `Categorie : ${article.categorie}\n`;
-    msg += `Prix : ${article.prix ? article.prix.toLocaleString() : 'N/A'} FCFA\n`;
-    msg += `Description : ${article.description}\n`;
-    msg += `Contact : ${process.env.CONTACT_PHONE || '0505730455'}\n`;
-    msg += `Disponible : ${article.disponible ? 'Oui' : 'Non'}`;
-    return msg;
+    return `${article.nom}\nCatégorie : ${article.categorie}\nPrix : ${article.prix ? article.prix.toLocaleString() : 'N/A'} FCFA\nDescription : ${article.description}\nContact : ${process.env.CONTACT_PHONE || '0505730455'}\nDisponible : ${article.disponible ? 'Oui' : 'Non'}`;
 }
 
-function formatList(articles, title = 'Resultats', limit = 10) {
-    if (!articles || articles.length === 0) return 'Aucun article trouve';
+function formatList(articles, title = 'Résultats', limit = 10) {
+    if (!articles || !articles.length) return 'Aucun article trouvé';
     const list = articles.slice(0, limit);
     let msg = `${title} (${list.length} article${list.length > 1 ? 's' : ''})\n\n`;
     list.forEach((a, i) => {
-        msg += `${i + 1}. ${a.nom}\n`;
-        msg += `   Prix : ${a.prix ? a.prix.toLocaleString() : 'N/A'} FCFA\n`;
-        msg += `   Categorie : ${a.categorie}\n\n`;
+        msg += `${i + 1}. ${a.nom}\n   Prix : ${a.prix ? a.prix.toLocaleString() : 'N/A'} FCFA\n   Catégorie : ${a.categorie}\n\n`;
     });
     if (articles.length > limit) msg += `... et ${articles.length - limit} autre(s)\n`;
-    msg += `Pour plus d'infos, tapez "info [nom]"`;
+    msg += `Pour plus d'infos : "info [nom]"`;
     return msg;
 }
 
-function getImagePath(imageName) { return path.join(__dirname, '../media/images', imageName); }
-function getVideoPath(videoName) { return path.join(__dirname, '../media/videos', videoName); }
-function fileExists(filePath) { return fs.existsSync(filePath); }
-function getArticleImages(article) { return article?.images || []; }
-function getArticleVideos(article) { return article?.videos || []; }
+function getImagePath(name) { return path.join(__dirname, '../media/images', name); }
+function getVideoPath(name) { return path.join(__dirname, '../media/videos', name); }
+function fileExists(p) { return fs.existsSync(p); }
+function getArticleImages(a) { return a?.images || []; }
+function getArticleVideos(a) { return a?.videos || []; }
 
 function log(message, type = 'INFO') {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] [${type}] ${message}`);
+    console.log(`[${new Date().toISOString()}] [${type}] ${message}`);
 }
 
-function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 module.exports = {
     readJSON, writeJSON, normalizeText, extractKeywords,
