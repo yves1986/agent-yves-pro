@@ -388,32 +388,43 @@ class WhatsAppService {
                 return;
             }
 
-            // IMAGES
+            // ==================== IMAGES ====================
             if (msgLower.startsWith('images ')) {
-                const query = msg.substring(7);
-                const results = this.catalogue.search(query);
-                if (results.length) {
-                    await this.sendAllImages(message, results[0]);
-                    this.lastArticleByUser.set(sender, results[0]);
-                } else {
-                    await message.reply(`Aucun produit trouvé pour "${query}".`);
+                const query = msg.substring(7).trim();
+                if (!query) {
+                    await message.reply(`Veuillez préciser le produit. Exemple : "images Encens Sarakatane"`);
+                    return;
                 }
+                const results = this.catalogue.search(query);
+                if (results.length === 0) {
+                    await message.reply(`Aucun produit trouvé pour "${query}". Vérifiez l'orthographe.`);
+                    return;
+                }
+                const article = results[0];
+                log(`[IMAGES] Envoi des photos pour ${article.nom}`);
+                await this.sendAllImages(message, article);
+                this.lastArticleByUser.set(sender, article);
                 return;
             }
 
-            // VIDEOS
+            // ==================== VIDEOS ====================
             if (msgLower.startsWith('video ')) {
-                const query = msg.substring(6);
-                const results = this.catalogue.search(query);
-                if (results.length) {
-                    await this.sendAllVideos(message, results[0]);
-                    this.lastArticleByUser.set(sender, results[0]);
-                } else {
-                    await message.reply(`Aucun produit trouvé pour "${query}".`);
+                const query = msg.substring(6).trim();
+                if (!query) {
+                    await message.reply(`Veuillez préciser le produit. Exemple : "video Encens Sarakatane"`);
+                    return;
                 }
+                const results = this.catalogue.search(query);
+                if (results.length === 0) {
+                    await message.reply(`Aucun produit trouvé pour "${query}". Vérifiez l'orthographe.`);
+                    return;
+                }
+                const article = results[0];
+                log(`[VIDEO] Envoi de la vidéo pour ${article.nom}`);
+                await this.sendAllVideos(message, article);
+                this.lastArticleByUser.set(sender, article);
                 return;
             }
-
             // INFO / PRIX
             if (msgLower.startsWith('info ') || msgLower.startsWith('prix ')) {
                 const query = msg.substring(5);
