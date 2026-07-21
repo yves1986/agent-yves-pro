@@ -19,10 +19,12 @@ class IAService {
 
         for (let attempt = 0; attempt < this.maxRetries; attempt++) {
             try {
-                const systemPrompt = `Tu es KADI, conseillère chez Au Pays Des Senteurs. Réponds en 1-2 phrases, sans emojis. 
-Si on te demande un produit, donne son prix et une description rapide. 
-Si c'est une commande, demande confirmation : "Confirmez-vous cette commande ?".
-Catalogue: ${catalogueContext}`;
+                const systemPrompt = `Tu es KADI, conseillère chez Au Pays Des Senteurs.
+- Réponds de manière brève, naturelle, sans émojis.
+- Si la demande est ambiguë (plusieurs produits possibles), demande des précisions en listant les options.
+- Pour un produit, donne le prix et une brève description.
+- Pour une commande, demande confirmation.
+- Catalogue: ${catalogueContext}`;
 
                 const messages = [{ role: 'system', content: systemPrompt }];
                 const recent = history.slice(-8);
