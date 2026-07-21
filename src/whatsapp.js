@@ -197,22 +197,41 @@ class WhatsAppService {
         log(`Nouvelle commande: ${order.produit} x ${order.quantite}`);
     }
 
+    // ========== ENVOI D'IMAGES (MODIFIÉ) ==========
     async sendImage(message, article, imageName) {
         const imagePath = getImagePath(imageName);
+        log(`Tentative d'envoi de l'image : ${imagePath}`);
         if (!fileExists(imagePath)) {
-            await message.reply(`Photo indisponible pour ${article.nom}`);
+            log(`Image manquante : ${imagePath}`, 'ERROR');
+            await message.reply(`La photo de ${article.nom} n'est pas encore disponible.`);
             return false;
         }
         try {
             const media = MessageMedia.fromFilePath(imagePath);
             await message.reply(media, undefined, { caption: `${article.nom}` });
+            log(`Image envoyée avec succès : ${imageName}`);
             return true;
         } catch (err) {
-            log(`Erreur envoi image: ${err.message}`);
+            log(`Erreur envoi image: ${err.message}`, 'ERROR');
+            await message.reply(`Erreur lors de l'envoi de la photo.`);
             return false;
         }
     }
 
+    async sendAllImages(message, article) {
+        const images = getArticleImages(article);
+        if (!images.length) {
+            await message.reply(`Aucune photo disponible pour ${article.nom}.`);
+            return;
+        }
+        await message.reply(`Voici les photos de ${article.nom} :`);
+        for (const img of images) {
+            await this.sendImage(message, article, img);
+            await wait(500);
+        }
+    }
+
+    // ========== ENVOI DE VIDÉOS ==========
     async sendVideo(message, article, videoName) {
         const videoPath = getVideoPath(videoName);
         if (!fileExists(videoPath)) {
@@ -229,19 +248,6 @@ class WhatsAppService {
         }
     }
 
-    async sendAllImages(message, article) {
-        const images = getArticleImages(article);
-        if (!images.length) {
-            await message.reply(`Aucune photo disponible pour ${article.nom}`);
-            return;
-        }
-        await message.reply(`Photos de ${article.nom} :`);
-        for (const img of images) {
-            await this.sendImage(message, article, img);
-            await wait(500);
-        }
-    }
-
     async sendAllVideos(message, article) {
         const videos = getArticleVideos(article);
         if (!videos.length) {
@@ -255,6 +261,7 @@ class WhatsAppService {
         }
     }
 
+    // ========== PHRASES ==========
     getIntro() {
         const phrases = [
             `Bonjour, je suis KADI de la boutique Au Pays Des Senteurs. Comment puis-je vous aider ?`,
@@ -293,6 +300,7 @@ class WhatsAppService {
         return phrases[Math.floor(Math.random() * phrases.length)];
     }
 
+    // ========== TRAITEMENT DES MESSAGES ==========
     async handleMessage(message) {
         if (message.from.endsWith('@g.us')) return;
         if (!message.body) return;
@@ -388,43 +396,32 @@ class WhatsAppService {
                 return;
             }
 
-            // ==================== IMAGES ====================
+            // IMAGES
             if (msgLower.startsWith('images ')) {
-                const query = msg.substring(7).trim();
-                if (!query) {
-                    await message.reply(`Veuillez préciser le produit. Exemple : "images Encens Sarakatane"`);
-                    return;
-                }
+                const query = msg.substring(7);
                 const results = this.catalogue.search(query);
-                if (results.length === 0) {
-                    await message.reply(`Aucun produit trouvé pour "${query}". Vérifiez l'orthographe.`);
-                    return;
+                if (results.length) {
+                    await this.sendAllImages(message, results[0]);
+                    this.lastArticleByUser.set(sender, results[0]);
+                } else {
+                    await message.reply(`Aucun produit trouvé pour "${query}".`);
                 }
-                const article = results[0];
-                log(`[IMAGES] Envoi des photos pour ${article.nom}`);
-                await this.sendAllImages(message, article);
-                this.lastArticleByUser.set(sender, article);
                 return;
             }
 
-            // ==================== VIDEOS ====================
+            // VIDEOS
             if (msgLower.startsWith('video ')) {
-                const query = msg.substring(6).trim();
-                if (!query) {
-                    await message.reply(`Veuillez préciser le produit. Exemple : "video Encens Sarakatane"`);
-                    return;
-                }
+                const query = msg.substring(6);
                 const results = this.catalogue.search(query);
-                if (results.length === 0) {
-                    await message.reply(`Aucun produit trouvé pour "${query}". Vérifiez l'orthographe.`);
-                    return;
+                if (results.length) {
+                    await this.sendAllVideos(message, results[0]);
+                    this.lastArticleByUser.set(sender, results[0]);
+                } else {
+                    await message.reply(`Aucun produit trouvé pour "${query}".`);
                 }
-                const article = results[0];
-                log(`[VIDEO] Envoi de la vidéo pour ${article.nom}`);
-                await this.sendAllVideos(message, article);
-                this.lastArticleByUser.set(sender, article);
                 return;
             }
+
             // INFO / PRIX
             if (msgLower.startsWith('info ') || msgLower.startsWith('prix ')) {
                 const query = msg.substring(5);
@@ -474,36 +471,44 @@ ${this.getConfirmation()}`;
                 return;
             }
 
-            // CONFIRMATION COMMANDE (oui / non)
+            // ============================================================
+            // CONFIRMATION DE COMMANDE (OUI / NON) - PARTIE MODIFIÉE
+            // ============================================================
             if (msgLower === 'oui' || msgLower === 'o') {
                 if (this.pendingOrders.has(sender)) {
-                    const order = this.pendingOrders.get(sender);
-                    const total = order.article.prix * order.quantite;
+                    try {
+                        const order = this.pendingOrders.get(sender);
+                        const total = order.article.prix * order.quantite;
 
-                    this.saveOrder({
-                        client: sender,
-                        clientName: order.clientName,
-                        produit: order.article.nom,
-                        quantite: order.quantite,
-                        total: total,
-                        message: order.message,
-                        date: new Date().toISOString()
-                    });
+                        // Sauvegarde de la commande
+                        this.saveOrder({
+                            client: sender,
+                            clientName: order.clientName,
+                            produit: order.article.nom,
+                            quantite: order.quantite,
+                            total: total,
+                            message: order.message,
+                            date: new Date().toISOString()
+                        });
 
-                    const notif = `Nouvelle commande
-Client : ${order.clientName}
-Tel : ${sender.replace('@c.us', '')}
-Produit : ${order.article.nom}
-Quantite : ${order.quantite}
-Total : ${total.toLocaleString()} FCFA
-Message : "${order.message}"`;
-                    await this.client.sendMessage(`${this.config.MY_PERSONAL_NUMBER}@c.us`, notif);
+                        // Notification au vendeur
+                        const notif = `Nouvelle commande\nClient : ${order.clientName}\nTel : ${sender.replace('@c.us', '')}\nProduit : ${order.article.nom}\nQuantite : ${order.quantite}\nTotal : ${total.toLocaleString()} FCFA\nMessage : "${order.message}"`;
+                        try {
+                            await this.client.sendMessage(`${this.config.MY_PERSONAL_NUMBER}@c.us`, notif);
+                            log(`Notification envoyée à ${this.config.MY_PERSONAL_NUMBER}`);
+                        } catch (notifErr) {
+                            log(`Échec d'envoi de la notification: ${notifErr.message}`, 'ERROR');
+                            // On continue malgré l'échec
+                        }
 
-                    await message.reply(`Commande confirmée. Merci ! Un conseiller vous contactera au ${this.config.CONTACT_PHONE}.`);
-                    this.pendingOrders.delete(sender);
-                    return;
+                        await message.reply(`Commande confirmée. Merci ! Un conseiller vous contactera au ${this.config.CONTACT_PHONE}.`);
+                        this.pendingOrders.delete(sender);
+                    } catch (err) {
+                        log(`Erreur lors de la confirmation de commande: ${err.message}`, 'ERROR');
+                        await message.reply(`Désolée, une erreur est survenue lors de la confirmation. Veuillez réessayer ou contacter le support au ${this.config.CONTACT_PHONE}.`);
+                    }
                 } else {
-                    await message.reply(`Je n'ai pas de commande en attente.`);
+                    await message.reply(`Je n'ai pas de commande en attente pour vous.`);
                 }
                 return;
             }
@@ -552,7 +557,6 @@ Message : "${order.message}"`;
                 if (this.memory[sender].length > 20) this.memory[sender] = this.memory[sender].slice(-20);
                 this.saveMemory();
             } else {
-                // Fallback en cas d'échec de DeepSeek
                 await message.reply(`Je ne peux pas répondre pour le moment. Veuillez réessayer ou utiliser "!catalogue" pour voir nos produits.`);
             }
 
@@ -562,6 +566,7 @@ Message : "${order.message}"`;
         }
     }
 
+    // ========== DÉMARRAGE ET RECONNEXION ==========
     async start() {
         try {
             log('Démarrage...');
