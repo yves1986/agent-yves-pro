@@ -335,18 +335,42 @@ class WhatsAppService {
 
         try {
             // ============================================================
-            // 1. GESTION DES MESSAGES VOCAUX (robuste)
+            // 1. GESTION DES MESSAGES VOCAUX (ultra robuste)
             // ============================================================
-            const isVoice = message.type === 'ptt' ||
-                message.type === 'audio' ||
-                (message.hasMedia && message.media?.mimetype?.startsWith('audio/'));
+            let isVoice = false;
+
+            // Méthode 1 : par type
+            if (message.type === 'ptt' || message.type === 'audio') {
+                isVoice = true;
+            }
+
+            // Méthode 2 : par média (si le message a un média audio)
+            if (message.hasMedia && message.media) {
+                const mimeType = message.media.mimetype || '';
+                if (mimeType.startsWith('audio/')) {
+                    isVoice = true;
+                }
+            }
+
+            // Méthode 3 : par le contenu du message (si le corps est vide ou très court, c'est souvent un vocal)
+            if (!isVoice && !message.body && message.hasMedia) {
+                isVoice = true;
+            }
+
+            // Méthode 4 : par le nom du fichier (si présent)
+            if (!isVoice && message.media && message.media.filename) {
+                const filename = message.media.filename.toLowerCase();
+                if (filename.endsWith('.ogg') || filename.endsWith('.mp3') || filename.endsWith('.m4a') || filename.endsWith('.opus')) {
+                    isVoice = true;
+                }
+            }
 
             if (isVoice) {
-                log(`🎤 Message vocal détecté de ${senderName}`, 'INFO');
+                log(`🎤 Message vocal détecté de ${senderName} (type: ${message.type}, media: ${message.hasMedia})`, 'INFO');
                 await message.reply(
                     `Je vous remercie pour votre message vocal. Toutefois, pour un traitement plus rapide et précis, je vous invite à formuler votre demande par écrit. Cela me permettra de mieux vous orienter vers nos produits. Merci de votre compréhension.`
                 );
-                return;
+                return; // ← IMPORTANT : on stoppe le traitement ici
             }
 
             // ============================================================
