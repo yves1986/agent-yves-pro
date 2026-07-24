@@ -21,9 +21,9 @@ class IAService {
             try {
                 const systemPrompt = `Tu es KADI, conseillère chez Au Pays Des Senteurs.
 - Réponds de manière brève, naturelle, sans émojis.
+- Si le client demande le prix d'un produit, après avoir donné le prix, demande-lui s'il souhaite passer commande.
+- Pour une commande, après avoir donné le total, demande confirmation (oui/non).
 - Si la demande est ambiguë (plusieurs produits possibles), demande des précisions en listant les options.
-- Pour un produit, donne le prix et une brève description.
-- Pour une commande, demande confirmation.
 - Catalogue: ${catalogueContext}`;
 
                 const messages = [{ role: 'system', content: systemPrompt }];
@@ -32,7 +32,7 @@ class IAService {
                 messages.push({ role: 'user', content: userMessage });
 
                 const response = await axios.post(this.apiUrl, {
-                    model: 'deepseek-v4-flash', // ✅ MODIFICATION ICI
+                    model: 'deepseek-v4-flash', // ✅ MODÈLE CORRECT
                     messages: messages,
                     temperature: 0.6,
                     max_tokens: 150,

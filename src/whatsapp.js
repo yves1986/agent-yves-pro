@@ -17,7 +17,8 @@ class WhatsAppService {
         this.processedMessages = new Set();
         this.memory = {};
         this.lastArticleByUser = new Map();
-        this.pendingOrders = new Map();
+        this.pendingOrders = new Map(); // stocke les commandes en attente de confirmation
+        this.userStates = new Map();    // stocke les étapes de collecte d'infos { step, command }
         this.isReady = false;
         this.isInitialized = false;
         this.reconnectAttempts = 0;
@@ -34,7 +35,7 @@ class WhatsAppService {
         this.client = null;
 
         this.ensureDirectories();
-        this.logMediaFiles(); // Affiche le contenu des dossiers media au démarrage
+        this.logMediaFiles();
     }
 
     ensureDirectories() {
@@ -208,7 +209,7 @@ class WhatsAppService {
         log(`Nouvelle commande: ${order.produit} x ${order.quantite}`);
     }
 
-    // ========== ENVOI D'IMAGES (AVEC LOGS) ==========
+    // ========== ENVOI D'IMAGES ==========
     async sendImage(message, article, imageName) {
         const imagePath = getImagePath(imageName);
         log(`📸 Tentative d'envoi de l'image : ${imagePath}`);
@@ -284,7 +285,7 @@ class WhatsAppService {
             `Bonjour, je suis KADI de la boutique Au Pays Des Senteurs. Comment puis-je vous aider ?`,
             `Bonjour et bienvenue chez Au Pays Des Senteurs. Je suis KADI, votre conseillère.`,
             `Bonjour, merci de me contacter. Je suis KADI, je vous aide à découvrir nos produits.`,
-            `Bonjour. Ici KADI, votre conseillère en produits bien-être.`
+            `Bonjour, je vous souhaite une bonne journée. Ici KADI, votre conseillère en produits bien-être.`
         ];
         return phrases[Math.floor(Math.random() * phrases.length)];
     }
@@ -333,31 +334,37 @@ class WhatsAppService {
         log(`Message de ${senderName}: ${msg.substring(0, 50)}`);
 
         try {
-            // VOCAUX
+            // ============================================================
+            // 1. GESTION DES MESSAGES VOCAUX (polie)
+            // ============================================================
             if (message.type === 'ptt' || message.type === 'audio') {
-                await message.reply(`📱 Je ne peux pas lire les messages vocaux. Pour une réponse rapide, écrivez votre demande par texte. Merci !`);
+                await message.reply(
+                    `Je vous remercie pour votre message vocal. Toutefois, pour un traitement plus rapide et précis, je vous invite à formuler votre demande par écrit. Cela me permettra de mieux vous orienter vers nos produits. Merci de votre compréhension.`
+                );
                 return;
             }
 
-            // SALUTATIONS
+            // ============================================================
+            // 2. SALUTATIONS / MERCI / AU REVOIR
+            // ============================================================
             if (['bonjour', 'salut', 'hello', 'hi', 'bonsoir'].some(s => msgLower.includes(s))) {
                 await message.reply(this.getIntro());
                 return;
             }
 
-            // MERCI
             if (msgLower.includes('merci')) {
                 await message.reply(`Avec plaisir. N'hésitez pas si vous avez d'autres questions.`);
                 return;
             }
 
-            // AU REVOIR
             if (msgLower.includes('au revoir') || msgLower.includes('a plus') || msgLower.includes('bye')) {
                 await message.reply(`Au revoir, à bientôt chez Au Pays Des Senteurs.`);
                 return;
             }
 
-            // RECADRAGE
+            // ============================================================
+            // 3. RECADRAGE HORS SUJET
+            // ============================================================
             const horsSujet = ['amour', 'relation', 'sexe', 'coucher', 'sortir', 'rendez-vous', 'mariage'];
             if (horsSujet.some(m => msgLower.includes(m)) &&
                 !msgLower.includes('produit') && !msgLower.includes('bien-etre')) {
@@ -365,7 +372,67 @@ class WhatsAppService {
                 return;
             }
 
-            // ========== COMMANDES ==========
+            // ============================================================
+            // 4. GESTION DES ÉTATS DE COLLECTE D'INFOS (nom, commune, numéro)
+            //    Cela doit être traité AVANT les commandes internes pour
+            //    capturer les réponses du client.
+            // ============================================================
+            if (this.userStates.has(sender)) {
+                const state = this.userStates.get(sender);
+                const response = msgLower;
+                // Annulation possible à toute étape
+                if (response === 'non' || response === 'annuler' || response === 'stop' || response === 'annulation') {
+                    this.userStates.delete(sender);
+                    this.pendingOrders.delete(sender);
+                    await message.reply(`Commande annulée. N'hésitez pas si vous souhaitez commander un autre produit.`);
+                    return;
+                }
+                const order = state.command;
+                if (state.step === 'nom') {
+                    order.clientFullName = msg;
+                    state.step = 'commune';
+                    await message.reply(`Merci ${msg}. Quelle est votre commune de résidence ?`);
+                    return;
+                } else if (state.step === 'commune') {
+                    order.commune = msg;
+                    state.step = 'numero';
+                    await message.reply(`Quel est votre numéro de téléphone ? (ex: 07 77 60 29 77)`);
+                    return;
+                } else if (state.step === 'numero') {
+                    order.numero = msg;
+                    // Finalisation de la commande
+                    const total = order.article.prix * order.quantite;
+                    this.saveOrder({
+                        client: sender,
+                        clientName: order.clientFullName,
+                        commune: order.commune,
+                        numero: order.numero,
+                        produit: order.article.nom,
+                        quantite: order.quantite,
+                        total: total,
+                        message: order.message,
+                        date: new Date().toISOString()
+                    });
+                    // Notification au vendeur
+                    const notif = `Nouvelle commande\nClient : ${order.clientFullName}\nCommune : ${order.commune}\nTéléphone : ${order.numero}\nProduit : ${order.article.nom}\nQuantité : ${order.quantite}\nTotal : ${total.toLocaleString()} FCFA\nMessage : "${order.message}"`;
+                    try {
+                        await this.client.sendMessage(`${this.config.MY_PERSONAL_NUMBER}@c.us`, notif);
+                        log(`Notification envoyée à ${this.config.MY_PERSONAL_NUMBER}`);
+                    } catch (notifErr) {
+                        log(`Échec d'envoi de la notification: ${notifErr.message}`, 'ERROR');
+                    }
+                    await message.reply(`Commande confirmée et enregistrée. Merci ! Un conseiller vous contactera au ${this.config.CONTACT_PHONE} pour la livraison.`);
+                    this.userStates.delete(sender);
+                    this.pendingOrders.delete(sender);
+                    return;
+                }
+            }
+
+            // ============================================================
+            // 5. COMMANDES INTERNES (catalogue, info, images, etc.)
+            // ============================================================
+
+            // !catalogue
             if (msgLower === '!catalogue' || msgLower === '!cat') {
                 const categoriesCount = this.catalogue.getCategoriesWithCount();
                 let reponse = `Catalogue Au Pays Des Senteurs\n\n`;
@@ -413,13 +480,16 @@ class WhatsAppService {
                 return;
             }
 
-            // IMAGES
+            // IMAGES / PHOTOS
             if (msgLower.startsWith('images ') || msgLower === 'images' ||
                 msgLower.startsWith('photo ') || msgLower === 'photo' ||
                 msgLower.startsWith('photos ') || msgLower === 'photos') {
-                const query = msgLower.startsWith('images ') ? msg.substring(7) :
-                    msgLower.startsWith('photo ') ? msg.substring(6) :
-                        msgLower.startsWith('photos ') ? msg.substring(7) : '';
+                // Extraire le nom du produit
+                let query = '';
+                if (msgLower.startsWith('images ')) query = msg.substring(7);
+                else if (msgLower.startsWith('photo ')) query = msg.substring(6);
+                else if (msgLower.startsWith('photos ')) query = msg.substring(7);
+                else query = '';
                 const results = this.catalogue.search(query);
                 if (results.length) {
                     await this.sendAllImages(message, results[0]);
@@ -431,8 +501,12 @@ class WhatsAppService {
             }
 
             // VIDEOS
-            if (msgLower.startsWith('video ')) {
-                const query = msg.substring(6);
+            if (msgLower.startsWith('video ') || msgLower === 'video' ||
+                msgLower.startsWith('vidéo ') || msgLower === 'vidéo') {
+                let query = '';
+                if (msgLower.startsWith('video ')) query = msg.substring(6);
+                else if (msgLower.startsWith('vidéo ')) query = msg.substring(6);
+                else query = '';
                 const results = this.catalogue.search(query);
                 if (results.length) {
                     await this.sendAllVideos(message, results[0]);
@@ -488,37 +562,20 @@ class WhatsAppService {
                 return;
             }
 
-            // CONFIRMATION COMMANDE
+            // CONFIRMATION DE COMMANDE (oui / non) - ATTENTION: ce bloc doit être après les commandes internes
+            // pour ne pas interférer avec d'autres "oui".
+            // Il est traité après la commande mais il faut le placer ici avant l'appel DeepSeek.
+            // Cependant, il faut s'assurer que les messages "oui" ne soient pas capturés par d'autres conditions.
+            // On va le placer ici, mais attention: si le client répond "oui" à une autre question,
+            // cela pourrait être mal interprété. Pour l'instant, on le garde.
+            // On va aussi gérer le "non" pour annuler une commande en attente.
+
             if (msgLower === 'oui' || msgLower === 'o') {
                 if (this.pendingOrders.has(sender)) {
-                    try {
-                        const order = this.pendingOrders.get(sender);
-                        const total = order.article.prix * order.quantite;
-
-                        this.saveOrder({
-                            client: sender,
-                            clientName: order.clientName,
-                            produit: order.article.nom,
-                            quantite: order.quantite,
-                            total: total,
-                            message: order.message,
-                            date: new Date().toISOString()
-                        });
-
-                        const notif = `Nouvelle commande\nClient : ${order.clientName}\nTel : ${sender.replace('@c.us', '')}\nProduit : ${order.article.nom}\nQuantite : ${order.quantite}\nTotal : ${total.toLocaleString()} FCFA\nMessage : "${order.message}"`;
-                        try {
-                            await this.client.sendMessage(`${this.config.MY_PERSONAL_NUMBER}@c.us`, notif);
-                            log(`Notification envoyée à ${this.config.MY_PERSONAL_NUMBER}`);
-                        } catch (notifErr) {
-                            log(`Échec d'envoi de la notification: ${notifErr.message}`, 'ERROR');
-                        }
-
-                        await message.reply(`Commande confirmée. Merci ! Un conseiller vous contactera au ${this.config.CONTACT_PHONE}.`);
-                        this.pendingOrders.delete(sender);
-                    } catch (err) {
-                        log(`Erreur lors de la confirmation: ${err.message}`, 'ERROR');
-                        await message.reply(`Désolée, une erreur est survenue lors de la confirmation. Veuillez réessayer.`);
-                    }
+                    const order = this.pendingOrders.get(sender);
+                    // Passer à la collecte d'infos
+                    this.userStates.set(sender, { step: 'nom', command: order });
+                    await message.reply(`Merci pour votre commande. Pour la livraison, quel est votre nom complet ?`);
                 } else {
                     await message.reply(`Je n'ai pas de commande en attente pour vous.`);
                 }
@@ -528,6 +585,7 @@ class WhatsAppService {
             if (msgLower === 'non' || msgLower === 'n') {
                 if (this.pendingOrders.has(sender)) {
                     this.pendingOrders.delete(sender);
+                    if (this.userStates.has(sender)) this.userStates.delete(sender);
                     await message.reply(`Commande annulée.`);
                 } else {
                     await message.reply(`Je n'ai pas de commande en attente.`);
@@ -546,7 +604,9 @@ class WhatsAppService {
                 }
             }
 
-            // APPEL À DEEPSEEK
+            // ============================================================
+            // 6. APPEL À DEEPSEEK POUR TOUTE AUTRE DEMANDE
+            // ============================================================
             log(`[DEBUG] Aucune commande détectée, appel à DeepSeek.`);
 
             const catalogueContext = this.catalogue.articles
