@@ -337,7 +337,13 @@ class WhatsAppService {
             // ============================================================
             // 1. GESTION DES MESSAGES VOCAUX (polie)
             // ============================================================
-            if (message.type === 'ptt' || message.type === 'audio') {
+            // Détection robuste des messages vocaux
+            const isVoiceMessage = message.type === 'ptt' ||
+                message.type === 'audio' ||
+                (message.hasMedia && message.media?.mimetype?.startsWith('audio/'));
+
+            if (isVoiceMessage) {
+                log(`🎤 Message vocal détecté de ${senderName}`, 'INFO');
                 await message.reply(
                     `Je vous remercie pour votre message vocal. Toutefois, pour un traitement plus rapide et précis, je vous invite à formuler votre demande par écrit. Cela me permettra de mieux vous orienter vers nos produits. Merci de votre compréhension.`
                 );
@@ -373,9 +379,29 @@ class WhatsAppService {
             }
 
             // ============================================================
+            // 3bis. DÉTECTION DES DEMANDES GÉNÉRIQUES DE PRODUITS
+            // (messages pré-enregistrés depuis Facebook)
+            // ============================================================
+            const genericProductPhrases = [
+                'puis-je avoir plus d\'information sur votre produit',
+                'plus d\'infos sur le produit',
+                'informations produit',
+                'détails sur le produit',
+                'en savoir plus sur le produit',
+                'plus d\'information sur le produit',
+                'info produit',
+                'produit info',
+                'renseignement produit'
+            ];
+            if (genericProductPhrases.some(phrase => msgLower.includes(phrase))) {
+                await message.reply(
+                    `Je ne vois pas bien l'image du produit dont vous parlez. Pouvez-vous écrire le nom du produit pour que je puisse mieux vous servir ? Merci.`
+                );
+                return;
+            }
+
+            // ============================================================
             // 4. GESTION DES ÉTATS DE COLLECTE D'INFOS (nom, commune, numéro)
-            //    Cela doit être traité AVANT les commandes internes pour
-            //    capturer les réponses du client.
             // ============================================================
             if (this.userStates.has(sender)) {
                 const state = this.userStates.get(sender);
@@ -429,7 +455,7 @@ class WhatsAppService {
             }
 
             // ============================================================
-            // 5. COMMANDES INTERNES (catalogue, info, images, etc.)
+            // 5. COMMANDES INTERNES
             // ============================================================
 
             // !catalogue
@@ -484,7 +510,6 @@ class WhatsAppService {
             if (msgLower.startsWith('images ') || msgLower === 'images' ||
                 msgLower.startsWith('photo ') || msgLower === 'photo' ||
                 msgLower.startsWith('photos ') || msgLower === 'photos') {
-                // Extraire le nom du produit
                 let query = '';
                 if (msgLower.startsWith('images ')) query = msg.substring(7);
                 else if (msgLower.startsWith('photo ')) query = msg.substring(6);
@@ -562,18 +587,10 @@ class WhatsAppService {
                 return;
             }
 
-            // CONFIRMATION DE COMMANDE (oui / non) - ATTENTION: ce bloc doit être après les commandes internes
-            // pour ne pas interférer avec d'autres "oui".
-            // Il est traité après la commande mais il faut le placer ici avant l'appel DeepSeek.
-            // Cependant, il faut s'assurer que les messages "oui" ne soient pas capturés par d'autres conditions.
-            // On va le placer ici, mais attention: si le client répond "oui" à une autre question,
-            // cela pourrait être mal interprété. Pour l'instant, on le garde.
-            // On va aussi gérer le "non" pour annuler une commande en attente.
-
+            // CONFIRMATION DE COMMANDE
             if (msgLower === 'oui' || msgLower === 'o') {
                 if (this.pendingOrders.has(sender)) {
                     const order = this.pendingOrders.get(sender);
-                    // Passer à la collecte d'infos
                     this.userStates.set(sender, { step: 'nom', command: order });
                     await message.reply(`Merci pour votre commande. Pour la livraison, quel est votre nom complet ?`);
                 } else {
@@ -588,7 +605,7 @@ class WhatsAppService {
                     if (this.userStates.has(sender)) this.userStates.delete(sender);
                     await message.reply(`Commande annulée.`);
                 } else {
-                    await message.reply(`voulez vous passer une commande maintenant? `);
+                    await message.reply(`voulez vous passer une commande maintenant?`);
                 }
                 return;
             }
