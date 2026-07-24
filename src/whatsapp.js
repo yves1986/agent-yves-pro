@@ -6,7 +6,7 @@ const puppeteer = require('puppeteer-core');
 const chromium = require('@sparticuz/chromium');
 const {
     log, getImagePath, getVideoPath, fileExists,
-    getArticleImages, getArticleVideos, wait
+    getArticleImages, getArticleVideos, wait, listFiles
 } = require('./utils');
 
 class WhatsAppService {
@@ -34,6 +34,7 @@ class WhatsAppService {
         this.client = null;
 
         this.ensureDirectories();
+        this.logMediaFiles(); // Affiche le contenu des dossiers media au démarrage
     }
 
     ensureDirectories() {
@@ -47,6 +48,16 @@ class WhatsAppService {
         dirs.forEach(dir => {
             if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         });
+    }
+
+    logMediaFiles() {
+        const imageDir = path.join(__dirname, '../media/images');
+        const videoDir = path.join(__dirname, '../media/videos');
+        log(`📁 Dossier images : ${imageDir} - ${listFiles(imageDir).length} fichiers`);
+        log(`📁 Dossier vidéos : ${videoDir} - ${listFiles(videoDir).length} fichiers`);
+        if (listFiles(imageDir).length === 0) {
+            log(`⚠️ Aucun fichier image trouvé ! Vérifiez que les fichiers sont bien dans media/images/.`, 'WARNING');
+        }
     }
 
     async createClient() {
@@ -197,22 +208,22 @@ class WhatsAppService {
         log(`Nouvelle commande: ${order.produit} x ${order.quantite}`);
     }
 
-    // ========== ENVOI D'IMAGES (MODIFIÉ) ==========
+    // ========== ENVOI D'IMAGES (AVEC LOGS) ==========
     async sendImage(message, article, imageName) {
         const imagePath = getImagePath(imageName);
-        log(`Tentative d'envoi de l'image : ${imagePath}`);
+        log(`📸 Tentative d'envoi de l'image : ${imagePath}`);
         if (!fileExists(imagePath)) {
-            log(`Image manquante : ${imagePath}`, 'ERROR');
+            log(`❌ Image manquante : ${imagePath}`, 'ERROR');
             await message.reply(`La photo de ${article.nom} n'est pas encore disponible.`);
             return false;
         }
         try {
             const media = MessageMedia.fromFilePath(imagePath);
             await message.reply(media, undefined, { caption: `${article.nom}` });
-            log(`Image envoyée avec succès : ${imageName}`);
+            log(`✅ Image envoyée avec succès : ${imageName}`);
             return true;
         } catch (err) {
-            log(`Erreur envoi image: ${err.message}`, 'ERROR');
+            log(`❌ Erreur envoi image: ${err.message}`, 'ERROR');
             await message.reply(`Erreur lors de l'envoi de la photo.`);
             return false;
         }
@@ -220,6 +231,7 @@ class WhatsAppService {
 
     async sendAllImages(message, article) {
         const images = getArticleImages(article);
+        log(`📸 Nombre d'images pour ${article.nom} : ${images.length}`);
         if (!images.length) {
             await message.reply(`Aucune photo disponible pour ${article.nom}.`);
             return;
@@ -234,24 +246,29 @@ class WhatsAppService {
     // ========== ENVOI DE VIDÉOS ==========
     async sendVideo(message, article, videoName) {
         const videoPath = getVideoPath(videoName);
+        log(`🎬 Tentative d'envoi de la vidéo : ${videoPath}`);
         if (!fileExists(videoPath)) {
-            await message.reply(`Vidéo indisponible pour ${article.nom}`);
+            log(`❌ Vidéo manquante : ${videoPath}`, 'ERROR');
+            await message.reply(`La vidéo de ${article.nom} n'est pas encore disponible.`);
             return false;
         }
         try {
             const media = MessageMedia.fromFilePath(videoPath);
             await message.reply(media, undefined, { caption: `${article.nom} (vidéo)` });
+            log(`✅ Vidéo envoyée avec succès : ${videoName}`);
             return true;
         } catch (err) {
-            log(`Erreur envoi vidéo: ${err.message}`);
+            log(`❌ Erreur envoi vidéo: ${err.message}`, 'ERROR');
+            await message.reply(`Erreur lors de l'envoi de la vidéo.`);
             return false;
         }
     }
 
     async sendAllVideos(message, article) {
         const videos = getArticleVideos(article);
+        log(`🎬 Nombre de vidéos pour ${article.nom} : ${videos.length}`);
         if (!videos.length) {
-            await message.reply(`Aucune vidéo disponible pour ${article.nom}`);
+            await message.reply(`Aucune vidéo disponible pour ${article.nom}.`);
             return;
         }
         await message.reply(`Vidéo de ${article.nom} :`);
@@ -318,7 +335,7 @@ class WhatsAppService {
         try {
             // VOCAUX
             if (message.type === 'ptt' || message.type === 'audio') {
-                await message.reply(`Je ne peux pas lire les messages vocaux. Pouvez-vous écrire votre demande ? Merci.`);
+                await message.reply(`📱 Je ne peux pas lire les messages vocaux. Pour une réponse rapide, écrivez votre demande par texte. Merci !`);
                 return;
             }
 
@@ -460,27 +477,20 @@ class WhatsAppService {
                 }
 
                 const total = article.prix * quantite;
-                const reponse = `Commande enregistrée.
-Produit : ${article.nom}
-Quantité : ${quantite}
-Total : ${total.toLocaleString()} FCFA
-${this.getConfirmation()}`;
+                const reponse = `Commande enregistrée.\nProduit : ${article.nom}\nQuantité : ${quantite}\nTotal : ${total.toLocaleString()} FCFA\n${this.getConfirmation()}`;
                 await message.reply(reponse);
 
                 this.pendingOrders.set(sender, { article, quantite, total, clientName: senderName, message: msg });
                 return;
             }
 
-            // ============================================================
-            // CONFIRMATION DE COMMANDE (OUI / NON) - PARTIE MODIFIÉE
-            // ============================================================
+            // CONFIRMATION COMMANDE
             if (msgLower === 'oui' || msgLower === 'o') {
                 if (this.pendingOrders.has(sender)) {
                     try {
                         const order = this.pendingOrders.get(sender);
                         const total = order.article.prix * order.quantite;
 
-                        // Sauvegarde de la commande
                         this.saveOrder({
                             client: sender,
                             clientName: order.clientName,
@@ -491,21 +501,19 @@ ${this.getConfirmation()}`;
                             date: new Date().toISOString()
                         });
 
-                        // Notification au vendeur
                         const notif = `Nouvelle commande\nClient : ${order.clientName}\nTel : ${sender.replace('@c.us', '')}\nProduit : ${order.article.nom}\nQuantite : ${order.quantite}\nTotal : ${total.toLocaleString()} FCFA\nMessage : "${order.message}"`;
                         try {
                             await this.client.sendMessage(`${this.config.MY_PERSONAL_NUMBER}@c.us`, notif);
                             log(`Notification envoyée à ${this.config.MY_PERSONAL_NUMBER}`);
                         } catch (notifErr) {
                             log(`Échec d'envoi de la notification: ${notifErr.message}`, 'ERROR');
-                            // On continue malgré l'échec
                         }
 
                         await message.reply(`Commande confirmée. Merci ! Un conseiller vous contactera au ${this.config.CONTACT_PHONE}.`);
                         this.pendingOrders.delete(sender);
                     } catch (err) {
-                        log(`Erreur lors de la confirmation de commande: ${err.message}`, 'ERROR');
-                        await message.reply(`Désolée, une erreur est survenue lors de la confirmation. Veuillez réessayer ou contacter le support au ${this.config.CONTACT_PHONE}.`);
+                        log(`Erreur lors de la confirmation: ${err.message}`, 'ERROR');
+                        await message.reply(`Désolée, une erreur est survenue lors de la confirmation. Veuillez réessayer.`);
                     }
                 } else {
                     await message.reply(`Je n'ai pas de commande en attente pour vous.`);
@@ -534,9 +542,7 @@ ${this.getConfirmation()}`;
                 }
             }
 
-            // ============================================================
-            // APPEL A DEEPSEEK POUR TOUTE AUTRE DEMANDE
-            // ============================================================
+            // APPEL À DEEPSEEK
             log(`[DEBUG] Aucune commande détectée, appel à DeepSeek.`);
 
             const catalogueContext = this.catalogue.articles

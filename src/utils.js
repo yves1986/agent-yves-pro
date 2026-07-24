@@ -44,22 +44,30 @@ function formatList(articles, title = 'Résultats', limit = 10) {
     return msg;
 }
 
+// Chemins des médias
 function getImagePath(name) { return path.join(__dirname, '../media/images', name); }
 function getVideoPath(name) { return path.join(__dirname, '../media/videos', name); }
 function fileExists(p) { return fs.existsSync(p); }
 function getArticleImages(a) { return a?.images || []; }
 function getArticleVideos(a) { return a?.videos || []; }
 
+// Log avec horodatage
 function log(message, type = 'INFO') {
     console.log(`[${new Date().toISOString()}] [${type}] ${message}`);
 }
 
 function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// Fonction utilitaire pour lister les fichiers d'un dossier (debug)
+function listFiles(dir) {
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir);
+}
+
 module.exports = {
     readJSON, writeJSON, normalizeText, extractKeywords,
     formatArticle, formatList,
     getImagePath, getVideoPath, fileExists,
     getArticleImages, getArticleVideos,
-    log, wait
+    log, wait, listFiles
 };

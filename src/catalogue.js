@@ -18,14 +18,21 @@ class Catalogue {
 
     search(query) {
         if (!query || query.trim() === '') return this.articles.filter(a => a.disponible);
+        const normalizedQuery = normalizeText(query);
         const keywords = extractKeywords(query);
         if (!keywords.length) return [];
+
+        const exactMatch = this.articles.find(a =>
+            a.disponible && normalizeText(a.nom) === normalizedQuery
+        );
+        if (exactMatch) return [exactMatch];
+
         return this.articles.filter(article => {
             if (!article.disponible) return false;
             const searchText = normalizeText(
                 `${article.nom} ${article.description} ${article.categorie} ${article.localisation || ''} ${article.mots_cles?.join(' ') || ''}`
             );
-            return keywords.some(k => searchText.includes(k));
+            return keywords.every(kw => searchText.includes(kw));
         });
     }
 
