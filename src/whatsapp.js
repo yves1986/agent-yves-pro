@@ -335,14 +335,13 @@ class WhatsAppService {
 
         try {
             // ============================================================
-            // 1. GESTION DES MESSAGES VOCAUX (polie)
+            // 1. GESTION DES MESSAGES VOCAUX (robuste)
             // ============================================================
-            // Détection robuste des messages vocaux
-            const isVoiceMessage = message.type === 'ptt' ||
+            const isVoice = message.type === 'ptt' ||
                 message.type === 'audio' ||
                 (message.hasMedia && message.media?.mimetype?.startsWith('audio/'));
 
-            if (isVoiceMessage) {
+            if (isVoice) {
                 log(`🎤 Message vocal détecté de ${senderName}`, 'INFO');
                 await message.reply(
                     `Je vous remercie pour votre message vocal. Toutefois, pour un traitement plus rapide et précis, je vous invite à formuler votre demande par écrit. Cela me permettra de mieux vous orienter vers nos produits. Merci de votre compréhension.`
@@ -560,11 +559,16 @@ class WhatsAppService {
                 return;
             }
 
-            // COMMANDE
-            if (msgLower.includes('commande') || msgLower.includes('commander') ||
-                msgLower.includes('je prends') || msgLower.includes('je veux') ||
-                msgLower.includes('acheter') || msgLower.includes('reserver')) {
+            // ============================================================
+            // COMMANDE (détection renforcée)
+            // ============================================================
+            const commandKeywords = ['commande', 'commander', 'je prends', 'je veux', 'acheter', 'reserver'];
+            const isCommand = commandKeywords.some(kw => msgLower.includes(kw)) &&
+                !msgLower.includes('prix') &&
+                !msgLower.includes('info') &&
+                !msgLower.includes('catalogue');
 
+            if (isCommand) {
                 let article = null;
                 let quantite = 1;
                 const qMatch = msg.match(/(\d+)\s*(encens|kit|poudre|miel|suppositoire|encensoir|semence|lait|cendre)/i);
@@ -584,11 +588,15 @@ class WhatsAppService {
                 await message.reply(reponse);
 
                 this.pendingOrders.set(sender, { article, quantite, total, clientName: senderName, message: msg });
+                log(`[DEBUG] Commande stockée dans pendingOrders pour ${senderName}`, 'DEBUG');
                 return;
             }
 
-            // CONFIRMATION DE COMMANDE
+            // ============================================================
+            // CONFIRMATION DE COMMANDE (oui / non)
+            // ============================================================
             if (msgLower === 'oui' || msgLower === 'o') {
+                log(`[DEBUG] Oui reçu. pendingOrders contient : ${this.pendingOrders.has(sender) ? 'OUI' : 'NON'}`, 'DEBUG');
                 if (this.pendingOrders.has(sender)) {
                     const order = this.pendingOrders.get(sender);
                     this.userStates.set(sender, { step: 'nom', command: order });
@@ -605,7 +613,7 @@ class WhatsAppService {
                     if (this.userStates.has(sender)) this.userStates.delete(sender);
                     await message.reply(`Commande annulée.`);
                 } else {
-                    await message.reply(`voulez vous passer une commande maintenant?`);
+                    await message.reply(`Vous n'avez pas de commande en attente. Si vous souhaitez commander, dites "je commande [produit]".`);
                 }
                 return;
             }
