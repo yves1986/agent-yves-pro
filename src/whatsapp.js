@@ -284,7 +284,7 @@ class WhatsAppService {
             `Bonjour, je suis KADI de la boutique Au Pays Des Senteurs. Comment puis-je vous aider ?`,
             `Bonjour et bienvenue chez Au Pays Des Senteurs. Je suis KADI, votre conseillère.`,
             `Bonjour, merci de me contacter. Je suis KADI, je vous aide à découvrir nos produits.`,
-            `Bonjour, je vous souhaite une bonne journée. Ici KADI, votre conseillère en produits bien-être.`
+            `Bonjour. Ici KADI, votre conseillère en produits bien-être.`
         ];
         return phrases[Math.floor(Math.random() * phrases.length)];
     }
@@ -414,8 +414,12 @@ class WhatsAppService {
             }
 
             // IMAGES
-            if (msgLower.startsWith('images ')) {
-                const query = msg.substring(7);
+            if (msgLower.startsWith('images ') || msgLower === 'images' ||
+                msgLower.startsWith('photo ') || msgLower === 'photo' ||
+                msgLower.startsWith('photos ') || msgLower === 'photos') {
+                const query = msgLower.startsWith('images ') ? msg.substring(7) :
+                    msgLower.startsWith('photo ') ? msg.substring(6) :
+                        msgLower.startsWith('photos ') ? msg.substring(7) : '';
                 const results = this.catalogue.search(query);
                 if (results.length) {
                     await this.sendAllImages(message, results[0]);
