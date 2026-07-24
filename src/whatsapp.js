@@ -577,7 +577,7 @@ class WhatsAppService {
                     this.userStates.set(sender, { step: 'nom', command: order });
                     await message.reply(`Merci pour votre commande. Pour la livraison, quel est votre nom complet ?`);
                 } else {
-                    await message.reply(`Je n'ai pas de commande en attente pour vous.`);
+                    await message.reply(`S'il vous plaît, pouvez bien reformuler votre demande ? j'ai pas bien saisi ou bien voulez passez une commande maintenant?`);
                 }
                 return;
             }
@@ -588,7 +588,7 @@ class WhatsAppService {
                     if (this.userStates.has(sender)) this.userStates.delete(sender);
                     await message.reply(`Commande annulée.`);
                 } else {
-                    await message.reply(`Je n'ai pas de commande en attente.`);
+                    await message.reply(`voulez vous passer une commande maintenant? `);
                 }
                 return;
             }
@@ -627,12 +627,12 @@ class WhatsAppService {
                 if (this.memory[sender].length > 20) this.memory[sender] = this.memory[sender].slice(-20);
                 this.saveMemory();
             } else {
-                await message.reply(`Je ne peux pas répondre pour le moment. Veuillez réessayer ou utiliser "!catalogue" pour voir nos produits.`);
+                await message.reply(`Toutes mes excuses je vous repondrez tout à l'heure. Laissez moi les details precis de votre demande ou choix. A de tout suite. ou appelez moi directement au ${this.config.CONTACT_PHONE}`);
             }
 
         } catch (err) {
             log(`Erreur: ${err.message}`);
-            await message.reply(`Désolée, une erreur est survenue. Reessayez ou contactez le support au ${this.config.CONTACT_PHONE}.`);
+            await message.reply(`Veuillez, patientez je vais vous repondre dans quelques instants. ou contactez ma conseillère pour traitement rapide au ${this.config.CONTACT_PHONE}.`);
         }
     }
 
