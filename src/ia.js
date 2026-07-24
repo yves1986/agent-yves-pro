@@ -32,7 +32,7 @@ class IAService {
                 messages.push({ role: 'user', content: userMessage });
 
                 const response = await axios.post(this.apiUrl, {
-                    model: 'deepseek-chat',
+                    model: 'deepseek-v4-flash', // ✅ MODIFICATION ICI
                     messages: messages,
                     temperature: 0.6,
                     max_tokens: 150,
