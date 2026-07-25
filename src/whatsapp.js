@@ -1,4 +1,4 @@
-const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('@pedroslopez/whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs');
 const path = require('path');
@@ -23,7 +23,7 @@ class WhatsAppService {
         this.isInitialized = false;
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 20;
-        this.reconnectDelay = 5000;
+        this.reconnectDelay = 15000; // 15 secondes minimum
         this.keepAliveInterval = null;
         this.checkInterval = null;
 
@@ -177,12 +177,12 @@ class WhatsAppService {
         });
     }
 
-    // ========== RECONNEXION AUTOMATIQUE ==========
+    // ========== RECONNEXION AUTOMATIQUE AVEC BACKOFF (espacé) ==========
     async handleReconnection() {
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
             log(`Trop de tentatives (${this.maxReconnectAttempts}), on réessaye plus tard...`, 'FATAL');
             this.reconnectAttempts = 0;
-            setTimeout(() => this.handleReconnection(), 60000);
+            setTimeout(() => this.handleReconnection(), 300000); // 5 minutes
             return;
         }
 
@@ -194,7 +194,8 @@ class WhatsAppService {
                 await this.client.destroy().catch(() => { });
             }
 
-            const delay = Math.min(this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1), 60000);
+            // Délai exponentiel avec minimum 15 secondes, maximum 60 secondes
+            const delay = Math.min(15000 * Math.pow(1.5, this.reconnectAttempts - 1), 60000);
             log(`Attente de ${delay / 1000}s avant reconnexion`, 'RECONNECT');
             await wait(delay);
 
@@ -206,20 +207,22 @@ class WhatsAppService {
             this.reconnectAttempts = 0;
         } catch (err) {
             log(`Échec de la reconnexion: ${err.message}`, 'ERROR');
-            setTimeout(() => this.handleReconnection(), 30000);
+            setTimeout(() => this.handleReconnection(), 60000); // 1 minute
         }
     }
 
-    // ========== KEEP ALIVE ET WATCHDOG ==========
+    // ========== KEEP ALIVE ET WATCHDOG (espacés) ==========
     setupKeepAlive() {
+        // Ping toutes les 5 minutes
         this.keepAliveInterval = setInterval(() => {
             if (this.isReady && this.client) {
                 try {
                     this.client.pupPage?.evaluate(() => 'keep-alive').catch(() => { });
                 } catch (e) { }
             }
-        }, 30000);
+        }, 300000); // 5 minutes
 
+        // Vérification de l'état toutes les 10 minutes
         this.checkInterval = setInterval(async () => {
             if (!this.isReady && this.isInitialized) {
                 log('Watchdog: agent non prêt, tentative de reconnexion...', 'WATCHDOG');
@@ -241,7 +244,7 @@ class WhatsAppService {
                     await this.handleReconnection();
                 }
             }
-        }, 120000);
+        }, 600000); // 10 minutes
     }
 
     // ========== MÉMOIRE ==========
