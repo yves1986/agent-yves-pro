@@ -17,8 +17,8 @@ class WhatsAppService {
         this.processedMessages = new Set();
         this.memory = {};
         this.lastArticleByUser = new Map();
-        this.pendingOrders = new Map(); // stocke les commandes en attente de confirmation
-        this.userStates = new Map();    // stocke les étapes de collecte d'infos { step, command }
+        this.pendingOrders = new Map();
+        this.userStates = new Map();
         this.isReady = false;
         this.isInitialized = false;
         this.reconnectAttempts = 0;
@@ -92,7 +92,7 @@ class WhatsAppService {
             log('Authentification réussie');
         });
 
-        this.client.on('ready', () => {
+        this.client.on('ready', async () => {
             this.isReady = true;
             this.isInitialized = true;
             this.reconnectAttempts = 0;
@@ -102,6 +102,42 @@ class WhatsAppService {
             console.log(`Contact : ${this.config.CONTACT_PHONE}`);
             console.log(`${this.catalogue.articles.length} articles chargés`);
             console.log('Commandes : !catalogue, info [nom], images [nom], video [nom]');
+
+            // ============================================================
+            // TRAITEMENT DES MESSAGES NON LUS AU DÉMARRAGE
+            // ============================================================
+            try {
+                const chats = await this.client.getChats();
+                log(`📋 ${chats.length} chats récupérés`, 'INFO');
+                let processedCount = 0;
+
+                for (const chat of chats) {
+                    if (chat.isGroup) continue;
+                    const unreadCount = chat.unreadCount || 0;
+                    if (unreadCount === 0) continue;
+
+                    log(`📩 ${chat.name} (${chat.id.user}) - ${unreadCount} message(s) non lu(s)`, 'INFO');
+
+                    const limit = Math.min(unreadCount, 5);
+                    const messages = await chat.fetchMessages({ limit: limit });
+
+                    for (const msg of messages.reverse()) {
+                        if (msg.fromMe) continue;
+                        if (this.processedMessages.has(msg.id.id)) continue;
+
+                        this.processedMessages.add(msg.id.id);
+                        setTimeout(() => this.processedMessages.delete(msg.id.id), 5000);
+
+                        log(`📩 (ancien) ${chat.name}: ${msg.body?.substring(0, 50) || '[média]'}`, 'MESSAGE');
+                        await this.handleMessage(msg);
+                        processedCount++;
+                        await wait(2000);
+                    }
+                }
+                log(`📬 ${processedCount} anciens messages traités`, 'INFO');
+            } catch (err) {
+                log(`Erreur lors du traitement des anciens messages: ${err.message}`, 'ERROR');
+            }
         });
 
         this.client.on('auth_failure', async (msg) => {
@@ -113,12 +149,17 @@ class WhatsAppService {
         this.client.on('disconnected', async (reason) => {
             log(`Déconnecté: ${reason}`);
             this.isReady = false;
-            if (reason !== 'LOGOUT') await this.handleReconnection();
+            if (reason !== 'LOGOUT') {
+                await this.handleReconnection();
+            } else {
+                log('Déconnexion volontaire (LOGOUT) - pas de reconnexion automatique');
+            }
         });
 
         this.client.on('error', async (error) => {
             log(`Erreur: ${error.message}`);
-            if (error.message.includes('TIMEOUT') || error.message.includes('closed')) {
+            if (error.message.includes('TIMEOUT') || error.message.includes('closed') || error.message.includes('Session')) {
+                this.isReady = false;
                 await this.handleReconnection();
             }
         });
@@ -136,52 +177,66 @@ class WhatsAppService {
         });
     }
 
+    // ========== RECONNEXION AUTOMATIQUE ==========
     async handleReconnection() {
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            log(`Trop de tentatives`, 'FATAL');
+            log(`Trop de tentatives (${this.maxReconnectAttempts}), on réessaye plus tard...`, 'FATAL');
             this.reconnectAttempts = 0;
             setTimeout(() => this.handleReconnection(), 60000);
             return;
         }
+
         this.reconnectAttempts++;
-        log(`Tentative ${this.reconnectAttempts}`);
+        log(`Tentative de reconnexion ${this.reconnectAttempts}/${this.maxReconnectAttempts}`, 'RECONNECT');
+
         try {
-            if (this.client) await this.client.destroy().catch(() => { });
-            const delay = Math.min(5000 * Math.pow(1.5, this.reconnectAttempts - 1), 60000);
+            if (this.client) {
+                await this.client.destroy().catch(() => { });
+            }
+
+            const delay = Math.min(this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1), 60000);
+            log(`Attente de ${delay / 1000}s avant reconnexion`, 'RECONNECT');
             await wait(delay);
+
             this.client = await this.createClient();
             this.setupEvents();
             await this.client.initialize();
-            log('Reconnexion réussie');
+
+            log('✅ Reconnexion réussie', 'SUCCESS');
             this.reconnectAttempts = 0;
         } catch (err) {
-            log(`Échec reconnexion: ${err.message}`);
+            log(`Échec de la reconnexion: ${err.message}`, 'ERROR');
             setTimeout(() => this.handleReconnection(), 30000);
         }
     }
 
+    // ========== KEEP ALIVE ET WATCHDOG ==========
     setupKeepAlive() {
         this.keepAliveInterval = setInterval(() => {
             if (this.isReady && this.client) {
-                try { this.client.pupPage?.evaluate(() => 'keep-alive').catch(() => { }); } catch (e) { }
+                try {
+                    this.client.pupPage?.evaluate(() => 'keep-alive').catch(() => { });
+                } catch (e) { }
             }
         }, 30000);
 
         this.checkInterval = setInterval(async () => {
             if (!this.isReady && this.isInitialized) {
-                log('Watchdog: reconnexion');
+                log('Watchdog: agent non prêt, tentative de reconnexion...', 'WATCHDOG');
                 await this.handleReconnection();
+                return;
             }
-            if (this.isReady) {
+
+            if (this.isReady && this.client) {
                 try {
                     const state = await this.client.getState().catch(() => null);
                     if (state !== 'CONNECTED') {
-                        log(`État anormal: ${state}`);
+                        log(`État anormal: ${state}`, 'WATCHDOG');
                         this.isReady = false;
                         await this.handleReconnection();
                     }
                 } catch (err) {
-                    log(`Erreur état: ${err.message}`);
+                    log(`Erreur lors de la vérification de l'état: ${err.message}`, 'WATCHDOG');
                     this.isReady = false;
                     await this.handleReconnection();
                 }
@@ -189,6 +244,7 @@ class WhatsAppService {
         }, 120000);
     }
 
+    // ========== MÉMOIRE ==========
     loadMemory() {
         if (fs.existsSync(this.memoryPath)) {
             try { this.memory = JSON.parse(fs.readFileSync(this.memoryPath, 'utf8')); } catch (e) { this.memory = {}; }
@@ -335,42 +391,45 @@ class WhatsAppService {
 
         try {
             // ============================================================
-            // 1. GESTION DES MESSAGES VOCAUX (ultra robuste)
+            // 1. DÉTECTION DES MESSAGES VOCAUX (ultra-robuste)
             // ============================================================
             let isVoice = false;
 
-            // Méthode 1 : par type
             if (message.type === 'ptt' || message.type === 'audio') {
                 isVoice = true;
             }
 
-            // Méthode 2 : par média (si le message a un média audio)
-            if (message.hasMedia && message.media) {
-                const mimeType = message.media.mimetype || '';
-                if (mimeType.startsWith('audio/')) {
+            if (message._data) {
+                if (message._data.type === 'ptt' || message._data.type === 'audio') {
+                    isVoice = true;
+                }
+                if (message._data.mimetype && message._data.mimetype.startsWith('audio/')) {
                     isVoice = true;
                 }
             }
 
-            // Méthode 3 : par le contenu du message (si le corps est vide ou très court, c'est souvent un vocal)
-            if (!isVoice && !message.body && message.hasMedia) {
+            if (message.hasMedia && message.media) {
+                if (message.media.mimetype && message.media.mimetype.startsWith('audio/')) {
+                    isVoice = true;
+                }
+                if (message.media.filename) {
+                    const ext = message.media.filename.toLowerCase().split('.').pop();
+                    if (['ogg', 'mp3', 'm4a', 'opus', 'wav'].includes(ext)) {
+                        isVoice = true;
+                    }
+                }
+            }
+
+            if (!isVoice && message.hasMedia && !message.body) {
                 isVoice = true;
             }
 
-            // Méthode 4 : par le nom du fichier (si présent)
-            if (!isVoice && message.media && message.media.filename) {
-                const filename = message.media.filename.toLowerCase();
-                if (filename.endsWith('.ogg') || filename.endsWith('.mp3') || filename.endsWith('.m4a') || filename.endsWith('.opus')) {
-                    isVoice = true;
-                }
-            }
-
             if (isVoice) {
-                log(`🎤 Message vocal détecté de ${senderName} (type: ${message.type}, media: ${message.hasMedia})`, 'INFO');
+                log(`🎤 Message vocal détecté (type: ${message.type}, hasMedia: ${message.hasMedia})`, 'INFO');
                 await message.reply(
                     `Je vous remercie pour votre message vocal. Toutefois, pour un traitement plus rapide et précis, je vous invite à formuler votre demande par écrit. Cela me permettra de mieux vous orienter vers nos produits. Merci de votre compréhension.`
                 );
-                return; // ← IMPORTANT : on stoppe le traitement ici
+                return;
             }
 
             // ============================================================
@@ -403,7 +462,6 @@ class WhatsAppService {
 
             // ============================================================
             // 3bis. DÉTECTION DES DEMANDES GÉNÉRIQUES DE PRODUITS
-            // (messages pré-enregistrés depuis Facebook)
             // ============================================================
             const genericProductPhrases = [
                 'puis-je avoir plus d\'information sur votre produit',
@@ -424,12 +482,11 @@ class WhatsAppService {
             }
 
             // ============================================================
-            // 4. GESTION DES ÉTATS DE COLLECTE D'INFOS (nom, commune, numéro)
+            // 4. GESTION DES ÉTATS DE COLLECTE D'INFOS
             // ============================================================
             if (this.userStates.has(sender)) {
                 const state = this.userStates.get(sender);
                 const response = msgLower;
-                // Annulation possible à toute étape
                 if (response === 'non' || response === 'annuler' || response === 'stop' || response === 'annulation') {
                     this.userStates.delete(sender);
                     this.pendingOrders.delete(sender);
@@ -449,7 +506,6 @@ class WhatsAppService {
                     return;
                 } else if (state.step === 'numero') {
                     order.numero = msg;
-                    // Finalisation de la commande
                     const total = order.article.prix * order.quantite;
                     this.saveOrder({
                         client: sender,
@@ -462,7 +518,6 @@ class WhatsAppService {
                         message: order.message,
                         date: new Date().toISOString()
                     });
-                    // Notification au vendeur
                     const notif = `Nouvelle commande\nClient : ${order.clientFullName}\nCommune : ${order.commune}\nTéléphone : ${order.numero}\nProduit : ${order.article.nom}\nQuantité : ${order.quantite}\nTotal : ${total.toLocaleString()} FCFA\nMessage : "${order.message}"`;
                     try {
                         await this.client.sendMessage(`${this.config.MY_PERSONAL_NUMBER}@c.us`, notif);
@@ -481,7 +536,6 @@ class WhatsAppService {
             // 5. COMMANDES INTERNES
             // ============================================================
 
-            // !catalogue
             if (msgLower === '!catalogue' || msgLower === '!cat') {
                 const categoriesCount = this.catalogue.getCategoriesWithCount();
                 let reponse = `Catalogue Au Pays Des Senteurs\n\n`;
@@ -685,7 +739,7 @@ class WhatsAppService {
         }
     }
 
-    // ========== DÉMARRAGE ET RECONNEXION ==========
+    // ========== DÉMARRAGE ET RECONNEXION FORCÉE ==========
     async start() {
         try {
             log('Démarrage...');
