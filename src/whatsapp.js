@@ -104,7 +104,7 @@ class WhatsAppService {
             console.log('Commandes : !catalogue, info [nom], images [nom], video [nom]');
 
             // ============================================================
-            // TRAITEMENT DES MESSAGES NON LUS AU DÉMARRAGE
+            // TRAITEMENT DES ANCIENS MESSAGES NON LUS (RÉVISÉ)
             // ============================================================
             try {
                 const chats = await this.client.getChats();
@@ -122,16 +122,27 @@ class WhatsAppService {
                     const messages = await chat.fetchMessages({ limit: limit });
 
                     for (const msg of messages.reverse()) {
+                        // Ignorer les messages envoyés par le bot
                         if (msg.fromMe) continue;
+                        // Ignorer les messages sans contenu (corps vide et pas de média)
+                        if (!msg.body && !msg.hasMedia) continue;
+                        // Éviter les doublons
                         if (this.processedMessages.has(msg.id.id)) continue;
 
                         this.processedMessages.add(msg.id.id);
                         setTimeout(() => this.processedMessages.delete(msg.id.id), 5000);
 
                         log(`📩 (ancien) ${chat.name}: ${msg.body?.substring(0, 50) || '[média]'}`, 'MESSAGE');
-                        await this.handleMessage(msg);
-                        processedCount++;
-                        await wait(2000);
+
+                        // Traiter chaque message avec un try/catch individuel
+                        try {
+                            await this.handleMessage(msg);
+                            processedCount++;
+                            await wait(2000); // Pause entre chaque réponse
+                        } catch (err) {
+                            log(`❌ Erreur sur message ${msg.id.id}: ${err.message}`, 'ERROR');
+                            // Continuer avec le message suivant
+                        }
                     }
                 }
                 log(`📬 ${processedCount} anciens messages traités`, 'INFO');
@@ -139,7 +150,7 @@ class WhatsAppService {
                 log(`Erreur lors du traitement des anciens messages: ${err.message}`, 'ERROR');
             }
         });
-
+        
         this.client.on('auth_failure', async (msg) => {
             log(`Échec auth: ${msg}`);
             this.isReady = false;
