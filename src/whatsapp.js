@@ -104,8 +104,10 @@ class WhatsAppService {
             console.log('Commandes : !catalogue, info [nom], images [nom], video [nom]');
 
             // ============================================================
-            // TRAITEMENT DES ANCIENS MESSAGES NON LUS (RÉVISÉ)
+            // TRAITEMENT DES ANCIENS MESSAGES NON LUS - DÉSACTIVÉ
+            // (cause de ralentissements et déconnexions)
             // ============================================================
+            /*
             try {
                 const chats = await this.client.getChats();
                 log(`📋 ${chats.length} chats récupérés`, 'INFO');
@@ -122,11 +124,8 @@ class WhatsAppService {
                     const messages = await chat.fetchMessages({ limit: limit });
 
                     for (const msg of messages.reverse()) {
-                        // Ignorer les messages envoyés par le bot
                         if (msg.fromMe) continue;
-                        // Ignorer les messages sans contenu (corps vide et pas de média)
                         if (!msg.body && !msg.hasMedia) continue;
-                        // Éviter les doublons
                         if (this.processedMessages.has(msg.id.id)) continue;
 
                         this.processedMessages.add(msg.id.id);
@@ -134,14 +133,12 @@ class WhatsAppService {
 
                         log(`📩 (ancien) ${chat.name}: ${msg.body?.substring(0, 50) || '[média]'}`, 'MESSAGE');
 
-                        // Traiter chaque message avec un try/catch individuel
                         try {
                             await this.handleMessage(msg);
                             processedCount++;
-                            await wait(2000); // Pause entre chaque réponse
+                            await wait(2000);
                         } catch (err) {
                             log(`❌ Erreur sur message ${msg.id.id}: ${err.message}`, 'ERROR');
-                            // Continuer avec le message suivant
                         }
                     }
                 }
@@ -149,8 +146,9 @@ class WhatsAppService {
             } catch (err) {
                 log(`Erreur lors du traitement des anciens messages: ${err.message}`, 'ERROR');
             }
+            */
         });
-        
+
         this.client.on('auth_failure', async (msg) => {
             log(`Échec auth: ${msg}`);
             this.isReady = false;
@@ -188,7 +186,7 @@ class WhatsAppService {
         });
     }
 
-    // ========== RECONNEXION AUTOMATIQUE AVEC BACKOFF (espacé) ==========
+    // ========== RECONNEXION AUTOMATIQUE AVEC BACKOFF ==========
     async handleReconnection() {
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
             log(`Trop de tentatives (${this.maxReconnectAttempts}), on réessaye plus tard...`, 'FATAL');
@@ -205,7 +203,6 @@ class WhatsAppService {
                 await this.client.destroy().catch(() => { });
             }
 
-            // Délai exponentiel avec minimum 15 secondes, maximum 60 secondes
             const delay = Math.min(15000 * Math.pow(1.5, this.reconnectAttempts - 1), 60000);
             log(`Attente de ${delay / 1000}s avant reconnexion`, 'RECONNECT');
             await wait(delay);
@@ -218,11 +215,11 @@ class WhatsAppService {
             this.reconnectAttempts = 0;
         } catch (err) {
             log(`Échec de la reconnexion: ${err.message}`, 'ERROR');
-            setTimeout(() => this.handleReconnection(), 60000); // 1 minute
+            setTimeout(() => this.handleReconnection(), 60000);
         }
     }
 
-    // ========== KEEP ALIVE ET WATCHDOG (espacés) ==========
+    // ========== KEEP ALIVE ET WATCHDOG ==========
     setupKeepAlive() {
         // Ping toutes les 5 minutes
         this.keepAliveInterval = setInterval(() => {
