@@ -64,6 +64,20 @@ class WhatsAppService {
             log(`⚠️ Aucun fichier image trouvé ! Vérifiez que les fichiers sont bien dans media/images/.`, 'WARNING');
         }
     }
+    // ========== CRÉATION DU CLIENT ==========
+    async createClient() {
+        const executablePath = await chromium.executablePath();
+        return new Client({
+            authStrategy: new LocalAuth({ dataPath: this.sessionPath }),
+            puppeteer: {
+                headless: true,
+                executablePath: executablePath,
+                args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+                defaultViewport: null,
+                protocolTimeout: 120000
+            }
+        });
+    }
 
     // ========== BASE DE CONNAISSANCES ==========
     loadKnowledgeBase() {
@@ -152,9 +166,7 @@ class WhatsAppService {
     isConfirmation(text) {
         const txt = text.toLowerCase().trim();
         const keywords = this.knowledge.confirmation_keywords || ['oui', 'ok'];
-        // Filtrer les mots trop courts (pour éviter les faux positifs comme "o" dans "Posologie")
         const validKeywords = keywords.filter(kw => kw.length >= 2);
-        // Vérifier si le message contient le mot entier (limites de mots)
         return validKeywords.some(kw => {
             const regex = new RegExp(`\\b${kw}\\b`, 'i');
             return regex.test(txt);
