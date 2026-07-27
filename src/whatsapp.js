@@ -30,9 +30,13 @@ class WhatsAppService {
         this.memoryPath = path.join(__dirname, '../data/memory.json');
         this.ordersPath = path.join(__dirname, '../data/orders.json');
         this.sessionPath = path.join(__dirname, '../.wwebjs_auth');
+        this.knowledgePath = path.join(__dirname, '../data/knowledge_base.json');
 
         this.storeName = "Au Pays Des Senteurs";
         this.client = null;
+
+        // Chargement de la base de connaissances
+        this.knowledge = this.loadKnowledgeBase();
 
         this.ensureDirectories();
         this.logMediaFiles();
@@ -59,6 +63,96 @@ class WhatsAppService {
         if (listFiles(imageDir).length === 0) {
             log(`⚠️ Aucun fichier image trouvé ! Vérifiez que les fichiers sont bien dans media/images/.`, 'WARNING');
         }
+    }
+
+    // ========== BASE DE CONNAISSANCES ==========
+    loadKnowledgeBase() {
+        try {
+            if (fs.existsSync(this.knowledgePath)) {
+                const data = JSON.parse(fs.readFileSync(this.knowledgePath, 'utf8'));
+                log('Base de connaissances chargée avec succès', 'INFO');
+                return data;
+            } else {
+                log('Fichier knowledge_base.json introuvable, utilisation des valeurs par défaut', 'WARNING');
+                return { general_faq: [], products: {}, confirmation_keywords: ['oui', 'o', 'ok'] };
+            }
+        } catch (err) {
+            log(`Erreur chargement base de connaissances: ${err.message}`, 'ERROR');
+            return { general_faq: [], products: {}, confirmation_keywords: ['oui', 'o', 'ok'] };
+        }
+    }
+
+    handleFAQ(userMessage) {
+        const msgLower = userMessage.toLowerCase().trim();
+        const kb = this.knowledge;
+
+        // 1. FAQ générale
+        for (const item of kb.general_faq || []) {
+            if (msgLower.includes(item.question.toLowerCase()) || item.question.toLowerCase().includes(msgLower)) {
+                return item.answer;
+            }
+        }
+
+        // 2. FAQ spécifiques des produits
+        const products = kb.products || {};
+        for (const [key, product] of Object.entries(products)) {
+            if (product.faq_specific) {
+                for (const item of product.faq_specific) {
+                    const q = item.question.toLowerCase();
+                    if (msgLower.includes(q) || q.includes(msgLower)) {
+                        return item.answer;
+                    }
+                }
+            }
+            if (key === 'encens' && product.general_faq) {
+                for (const item of product.general_faq) {
+                    const q = item.question.toLowerCase();
+                    if (msgLower.includes(q) || q.includes(msgLower)) {
+                        return item.answer;
+                    }
+                }
+            }
+        }
+
+        // 3. Fiche produit (si le nom du produit est mentionné)
+        for (const [key, product] of Object.entries(products)) {
+            if (key === 'encens') continue;
+            if (product.name && msgLower.includes(product.name.toLowerCase())) {
+                let answer = `📦 *${product.name}*\n💰 Prix : ${product.price} FCFA\n📝 Indications : ${product.indications}\n`;
+                if (product.dosage) {
+                    if (typeof product.dosage === 'object') {
+                        answer += `📋 Posologie :\n`;
+                        for (const [k, v] of Object.entries(product.dosage)) {
+                            answer += `   - ${k} : ${v}\n`;
+                        }
+                    } else {
+                        answer += `📋 Posologie : ${product.dosage}\n`;
+                    }
+                }
+                if (product.duration) answer += `⏳ Durée : ${product.duration}\n`;
+                if (product.contre_indications) answer += `⚠️ Contre-indications : ${product.contre_indications}\n`;
+                answer += `\n👉 Pour plus d'informations, posez-moi une question précise.`;
+                return answer;
+            }
+        }
+
+        // 4. Liste des encens
+        if (msgLower.includes('encens') && products.encens && products.encens.list) {
+            let answer = "🔥 *Nos encens disponibles :*\n\n";
+            products.encens.list.forEach(e => {
+                answer += `- ${e.name} : ${e.price} FCFA (${e.type})\n`;
+            });
+            answer += "\n👉 Quel encens vous intéresse ? Je peux vous donner plus de détails.";
+            return answer;
+        }
+
+        return null;
+    }
+
+    isConfirmation(text) {
+        const txt = text.toLowerCase().trim();
+        const keywords = this.knowledge.confirmation_keywords || ['oui', 'o', 'ok'];
+        return keywords.some(kw => txt.includes(kw) || kw.includes(txt));
     }
 
     async createClient() {
@@ -493,7 +587,7 @@ class WhatsAppService {
             }
 
             // ============================================================
-            // 4. GESTION DES ÉTATS DE COLLECTE D'INFOS
+            // 4. GESTION DES ÉTATS DE COLLECTE D'INFOS (nom, commune/ville, numéro)
             // ============================================================
             if (this.userStates.has(sender)) {
                 const state = this.userStates.get(sender);
@@ -508,7 +602,7 @@ class WhatsAppService {
                 if (state.step === 'nom') {
                     order.clientFullName = msg;
                     state.step = 'commune';
-                    await message.reply(`Merci ${msg}. Quelle est votre commune de résidence ?`);
+                    await message.reply(`Merci ${msg}. Quelle est votre commune ou ville de résidence ?`);
                     return;
                 } else if (state.step === 'commune') {
                     order.commune = msg;
@@ -529,7 +623,7 @@ class WhatsAppService {
                         message: order.message,
                         date: new Date().toISOString()
                     });
-                    const notif = `Nouvelle commande\nClient : ${order.clientFullName}\nCommune : ${order.commune}\nTéléphone : ${order.numero}\nProduit : ${order.article.nom}\nQuantité : ${order.quantite}\nTotal : ${total.toLocaleString()} FCFA\nMessage : "${order.message}"`;
+                    const notif = `Nouvelle commande\nClient : ${order.clientFullName}\nCommune/Ville : ${order.commune}\nTéléphone : ${order.numero}\nProduit : ${order.article.nom}\nQuantité : ${order.quantite}\nTotal : ${total.toLocaleString()} FCFA\nMessage : "${order.message}"`;
                     try {
                         await this.client.sendMessage(`${this.config.MY_PERSONAL_NUMBER}@c.us`, notif);
                         log(`Notification envoyée à ${this.config.MY_PERSONAL_NUMBER}`);
@@ -539,6 +633,9 @@ class WhatsAppService {
                     await message.reply(`Commande confirmée et enregistrée. Merci ! Un conseiller vous contactera au ${this.config.CONTACT_PHONE} pour la livraison.`);
                     this.userStates.delete(sender);
                     this.pendingOrders.delete(sender);
+
+                    // Demander si le client souhaite autre chose
+                    await message.reply(`Souhaitez-vous autre chose ? (répondez par oui ou non)`);
                     return;
                 }
             }
@@ -649,7 +746,7 @@ class WhatsAppService {
             }
 
             // ============================================================
-            // COMMANDE (détection renforcée)
+            // 6. GESTION DE LA COMMANDE (détection renforcée)
             // ============================================================
             const commandKeywords = ['commande', 'commander', 'je prends', 'je veux', 'acheter', 'reserver'];
             const isCommand = commandKeywords.some(kw => msgLower.includes(kw)) &&
@@ -682,16 +779,16 @@ class WhatsAppService {
             }
 
             // ============================================================
-            // CONFIRMATION DE COMMANDE (oui / non)
+            // 7. CONFIRMATION DE COMMANDE (reconnaissance étendue)
             // ============================================================
-            if (msgLower === 'oui' || msgLower === 'o') {
-                log(`[DEBUG] Oui reçu. pendingOrders contient : ${this.pendingOrders.has(sender) ? 'OUI' : 'NON'}`, 'DEBUG');
+            if (this.isConfirmation(msg)) {
+                log(`[DEBUG] Confirmation reçue. pendingOrders contient : ${this.pendingOrders.has(sender) ? 'OUI' : 'NON'}`, 'DEBUG');
                 if (this.pendingOrders.has(sender)) {
                     const order = this.pendingOrders.get(sender);
                     this.userStates.set(sender, { step: 'nom', command: order });
                     await message.reply(`Merci pour votre commande. Pour la livraison, quel est votre nom complet ?`);
                 } else {
-                    await message.reply(`S'il vous plaît, pouvez bien reformuler votre demande ? j'ai pas bien saisi ou bien voulez passez une commande maintenant?`);
+                    await message.reply(`S'il vous plaît, pouvez bien reformuler votre demande ? J'ai pas bien saisi ou bien voulez passer une commande maintenant ?`);
                 }
                 return;
             }
@@ -707,7 +804,37 @@ class WhatsAppService {
                 return;
             }
 
-            // RECHERCHE PAR CATÉGORIE
+            // ============================================================
+            // 8. GESTION DE "SOUHAITEZ-VOUS AUTRE CHOSE ?"
+            // ============================================================
+            if (this.userStates.has(sender) && this.userStates.get(sender).step === 'fin') {
+                const response = msgLower;
+                if (this.isConfirmation(response)) {
+                    this.userStates.delete(sender);
+                    await message.reply(`Parfait ! Que souhaitez-vous commander d'autre ? Dites-moi le produit.`);
+                    return;
+                } else if (response === 'non' || response === 'n') {
+                    this.userStates.delete(sender);
+                    await message.reply(`Nous vous remercions pour votre commande. Prenez soin de vous et à la prochaine ! 🙏`);
+                    return;
+                } else {
+                    await message.reply(`Je n'ai pas bien compris. Souhaitez-vous autre chose ? (répondez par oui ou non)`);
+                    return;
+                }
+            }
+
+            // ============================================================
+            // 9. FAQ (avant DeepSeek)
+            // ============================================================
+            const faqAnswer = this.handleFAQ(msg);
+            if (faqAnswer) {
+                await message.reply(faqAnswer);
+                return;
+            }
+
+            // ============================================================
+            // 10. RECHERCHE PAR CATÉGORIE
+            // ============================================================
             const categories = this.catalogue.categories || [];
             const catMatch = categories.find(c => msgLower.includes(c.toLowerCase()));
             if (catMatch) {
@@ -719,9 +846,9 @@ class WhatsAppService {
             }
 
             // ============================================================
-            // 6. APPEL À DEEPSEEK POUR TOUTE AUTRE DEMANDE
+            // 11. APPEL À DEEPSEEK POUR TOUTE AUTRE DEMANDE
             // ============================================================
-            log(`[DEBUG] Aucune commande détectée, appel à DeepSeek.`);
+            log(`[DEBUG] Aucune correspondance FAQ, appel à DeepSeek.`);
 
             const catalogueContext = this.catalogue.articles
                 .filter(a => a.disponible)
@@ -741,12 +868,12 @@ class WhatsAppService {
                 if (this.memory[sender].length > 20) this.memory[sender] = this.memory[sender].slice(-20);
                 this.saveMemory();
             } else {
-                await message.reply(`Toutes mes excuses je vous repondrez tout à l'heure. Laissez moi les details precis de votre demande ou choix. A de tout suite. ou appelez moi directement au ${this.config.CONTACT_PHONE}`);
+                await message.reply(`Je ne peux pas répondre pour le moment. Veuillez réessayer ou utiliser "!catalogue" pour voir nos produits.`);
             }
 
         } catch (err) {
             log(`Erreur: ${err.message}`);
-            await message.reply(`Veuillez, patientez je vais vous repondre dans quelques instants. ou contactez ma conseillère pour traitement rapide au ${this.config.CONTACT_PHONE}.`);
+            await message.reply(`Désolée, une erreur est survenue. Reessayez ou contactez le support au ${this.config.CONTACT_PHONE}.`);
         }
     }
 

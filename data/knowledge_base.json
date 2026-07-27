@@ -1,0 +1,533 @@
+{
+    "general_info": {
+        "delivery": {
+            "zones": "Partout en Côte d'Ivoire",
+            "delay": "24 à 72 heures maximum. Dans certains cas, vous pouvez recevoir le jour même ou le lendemain, selon votre localisation.",
+            "fees": "Offerts",
+            "process": "Un conseiller vous contactera pour confirmer le lieu et l'heure de livraison."
+        },
+        "payment": {
+            "methods": "Espèces à la livraison, Orange Money, MTN Mobile Money, Wave",
+            "details": "Les coordonnées Mobile Money sont fournies par le conseiller."
+        }
+    },
+    "general_faq": [
+        {
+            "question": "Combien de temps pour être livré ?",
+            "answer": "La livraison se fait généralement sous 24 à 72 heures maximum. Selon votre localisation, vous pouvez recevoir votre commande le jour même ou le lendemain."
+        },
+        {
+            "question": "Est-ce que je peux payer à la livraison ?",
+            "answer": "Oui mais une avance avance de 50% est requise pour eviter les deplacements inutiles et si vous etes à l'intérieur, paiement intégral avant livraison, nous acceptons le paiement en espèces à la livraison ainsi que par Orange Money, MTN Mobile Money ou Wave."
+        },
+        {
+            "question": "Comment savoir si ce produit est fait pour moi ?",
+            "answer": "Pour vous conseiller au mieux, pourriez-vous me décrire précisément le problème que vous rencontrez ? Chaque produit a des indications spécifiques."
+        },
+        {
+            "question": "Les produits sont-ils naturels ?",
+            "answer": "Oui, tous nos produits sont issus de la pharmacopée traditionnelle et sont 100% naturels."
+        },
+        {
+            "question": "Puis-je retourner un produit si je ne suis pas satisfait ?",
+            "answer": "Nous vous recommandons de suivre scrupuleusement la posologie. Si toutefois vous n'êtes pas satisfait, contactez notre service client pour étudier ensemble la meilleure solution."
+        },
+        {
+            "question": "Comment puis-je commander ?",
+            "answer": "Il vous suffit de me dire le produit que vous souhaitez, la quantité, et de me donner votre nom, votre commune/ville et votre numéro de téléphone. Je m'occupe du reste."
+        },
+        {
+            "question": "Quels sont les modes de paiement acceptés ?",
+            "answer": "Nous acceptons le paiement à la livraison (en espèces), Orange Money, MTN Mobile Money et Wave."
+        },
+        {
+            "question": "Est-ce que la livraison est vraiment gratuite ?",
+            "answer": "Oui, la livraison est offerte pour toute commande. Le prix affiché est le prix final."
+        },
+        {
+            "question": "Puis-je commander plusieurs produits à la fois ?",
+            "answer": "Oui, vous pouvez commander plusieurs produits en une seule fois. Je vous ferai un récapitulatif du total."
+        },
+        {
+            "question": "Comment puis-je suivre ma commande ?",
+            "answer": "Un conseiller vous contactera pour confirmer la livraison. Vous pouvez aussi nous contacter au 0505730455 pour le suivi."
+        },
+        {
+            "question": "Que faire si je ne reçois pas ma commande dans les délais ?",
+            "answer": "Veuillez nous contacter directement au 0505730455. Nous ferons le nécessaire pour régulariser la situation."
+        },
+        {
+            "question": "Les produits sont-ils certifiés ?",
+            "answer": "Nos produits sont issus de la pharmacopée traditionnelle et préparés selon des méthodes ancestrales. Ils sont 100% naturels."
+        },
+        {
+            "question": "Puis-je commander pour offrir ?",
+            "answer": "Oui, vous pouvez commander pour offrir. Indiquez-nous simplement le nom du destinataire et ses coordonnées."
+        },
+        {
+            "question": "Y a-t-il des frais supplémentaires ?",
+            "answer": "Non, le prix affiché est le prix final. Aucun frais supplémentaire n'est ajouté."
+        },
+        {
+            "question": "Comment savoir si le produit est en stock ?",
+            "answer": "Tous les produits présentés dans notre catalogue sont disponibles. Je vous confirme la disponibilité au moment de la commande."
+        },
+        {
+            "question": "Est-ce que je peux payer par chèque ?",
+            "answer": "Nous acceptons uniquement le paiement en espèces à la livraison et les transferts Mobile Money."
+        },
+        {
+            "question": "Les prix sont-ils négociables ?",
+            "answer": "Nos prix sont fixes et déjà très compétitifs. La qualité de nos produits justifie ce tarif."
+        },
+        {
+            "question": "Comment puis-je avoir plus d'informations sur un produit ?",
+            "answer": "Je vous donne toutes les informations nécessaires. Que souhaitez-vous savoir exactement ?"
+        },
+        {
+            "question": "Puis-je avoir un échantillon avant d'acheter ?",
+            "answer": "Nous ne proposons pas d'échantillons. Mais si vous suivez la posologie recommandée, vous pourrez constater l'efficacité du produit."
+        },
+        {
+            "question": "Est-ce que vous livrez en dehors d'Abidjan ?",
+            "answer": "Oui, nous livrons partout en Côte d'Ivoire. Les délais peuvent varier selon la localisation."
+        }
+    ],
+    "confirmation_keywords": [
+        "oui",
+        "o",
+        "ouais",
+        "ok",
+        "d'accord",
+        "je confirme",
+        "je le veux",
+        "c'est confirmé",
+        "envoyez",
+        "envoyer",
+        "oui oui",
+        "oui je confirme",
+        "ok je confirme",
+        "oui envoyer moi",
+        "confirmer",
+        "confirmé"
+    ],
+    "products": {
+        "semence_royale": {
+            "name": "Semence Royale",
+            "price": 10000,
+            "indications": "Augmente la quantité et la qualité du sperme, booste la fertilité, traite les maladies liées aux spermatozoïdes et à la prostate. Ne traite PAS la varicocèle.",
+            "contre_indications": "Aucune spécifique (hors allergies). Consulter un médecin si vous suivez un traitement médical lourd.",
+            "dosage": {
+                "poudre_verte": "2 cuillères à café matin et soir dans du lait liquide (Candia, Bonnet Rouge, lait de vache).",
+                "poudre_kaki_tchongon": "Mélanger quantité égale des deux, piler ou écraser, infuser dans de l'eau tiède. Boire matin et soir. Ne pas préparer à l'avance (le Tchongon se gâte vite). Tamiser si besoin."
+            },
+            "efficacy": "Oui, le produit est efficace. L'efficacité dépend du degré du mal et de l'organisme de chacun.",
+            "duration": "Un kit peut suffire ; d'autres peuvent nécessiter un second kit.",
+            "faq_specific": [
+                {
+                    "question": "Est-ce que vraiment le produit est efficace ?",
+                    "answer": "Oui, le produit est efficace. De nombreux clients ont constaté une amélioration significative. L'efficacité dépend du degré du mal et de l'organisme de chacun."
+                },
+                {
+                    "question": "Est-ce que ça va faire venir mon sperme là beaucoup ?",
+                    "answer": "Oui, Semence Royale est conçu pour augmenter la quantité et la qualité du sperme."
+                },
+                {
+                    "question": "Est-ce que je pourrais enceinter ma femme avec ?",
+                    "answer": "Oui, en améliorant la qualité et la quantité du sperme, ce produit augmente vos chances de fertilité."
+                },
+                {
+                    "question": "Mon sperme là sera lourd ?",
+                    "answer": "Oui, le produit rend le sperme plus épais et de meilleure qualité."
+                },
+                {
+                    "question": "Est-ce que ça va régler mon problème de spermatozoïdes ?",
+                    "answer": "Oui, Semence Royale est spécialement formulé pour traiter les problèmes liés aux spermatozoïdes."
+                },
+                {
+                    "question": "Est-ce qu'un kit peut faire un traitement complet ?",
+                    "answer": "Beaucoup de clients ont fait leur traitement avec un kit. Par contre, d'autres sont partis au-delà d'un kit. Cela dépend du degré du mal et de votre corps."
+                },
+                {
+                    "question": "Est-ce que ça soigne la varicocèle ?",
+                    "answer": "Non, Semence Royale ne traite pas la varicocèle. Nous avons un traitement spécifique pour la varicocèle à part."
+                },
+                {
+                    "question": "Combien de temps avant de voir les résultats ?",
+                    "answer": "Les premiers résultats se ressentent généralement après 1 à 2 semaines de traitement."
+                },
+                {
+                    "question": "Puis-je le prendre avec d'autres médicaments ?",
+                    "answer": "Nous conseillons de consulter un médecin si vous suivez un traitement médical lourd."
+                },
+                {
+                    "question": "Le Tchongon se gâte vite, comment faire ?",
+                    "answer": "Préparez la quantité que vous allez consommer immédiatement. Ne faites pas pour garder."
+                },
+                {
+                    "question": "Si les résidus me dérangent ou me donnent la toux ?",
+                    "answer": "Vous pouvez tamiser avant de boire pour éliminer les résidus."
+                }
+            ]
+        },
+        "suppositoire_africain": {
+            "name": "Suppositoire Africain",
+            "price": "3 000 F (1 paquet) / 5 500 F (2 paquets)",
+            "indications": "Douleurs de dos, mal des hanches, plantes des pieds qui chauffent, courbatures.",
+            "dosage": "Un suppositoire chaque soir au coucher. Frotter avec du beurre de karité. Insérer profondément.",
+            "duration": "Utiliser jusqu'à disparition complète de la douleur.",
+            "faq_specific": [
+                {
+                    "question": "Comment prendre le suppositoire ?",
+                    "answer": "On prend un suppositoire chaque soir au coucher. On frotte un peu de beurre de karité dessus pour faciliter l'entrée. On l'insère profondément dans l'anus."
+                },
+                {
+                    "question": "Pour un traitement, il faut combien de paquets ?",
+                    "answer": "En général, un paquet est souvent suffisant. Cependant, cela dépend de l'intensité de la douleur. Je vous conseille d'en prendre deux pour éviter de payer deux livraisons."
+                },
+                {
+                    "question": "Combien de temps dois-je prendre le suppositoire ?",
+                    "answer": "Jusqu'à ce que la douleur pour laquelle vous avez pris le produit disparaisse complètement."
+                },
+                {
+                    "question": "Est-ce que ça fait mal ?",
+                    "answer": "Non, avec le beurre de karité, l'insertion est facile et sans douleur."
+                },
+                {
+                    "question": "Que faire si j'ai envie d'aller à la selle après ?",
+                    "answer": "C'est généralement parce que le suppositoire n'a pas été inséré assez profondément. Assurez-vous de bien le pousser au fond."
+                },
+                {
+                    "question": "Est-ce que je peux prendre deux suppositoires par jour ?",
+                    "answer": "Non, un seul par jour au coucher est suffisant et recommandé."
+                },
+                {
+                    "question": "Combien de suppositoires y a-t-il dans un paquet ?",
+                    "answer": "Il y a 10 suppositoires dans un paquet."
+                }
+            ]
+        },
+        "encens": {
+            "list": [
+                {
+                    "name": "Sarakatane",
+                    "price": 5000,
+                    "type": "Maison, vêtements, bureau"
+                },
+                {
+                    "name": "Nafy (Rouge)",
+                    "price": 7000,
+                    "type": "Maison, odeur intense"
+                },
+                {
+                    "name": "Tchadien Boulette",
+                    "price": 6000,
+                    "type": "Maison, vêtements"
+                },
+                {
+                    "name": "Gueni",
+                    "price": 3000,
+                    "type": "Maison, vêtements, draps"
+                },
+                {
+                    "name": "Sandal",
+                    "price": 5000,
+                    "type": "Maison, vêtements, odeur boisée"
+                },
+                {
+                    "name": "Coquette",
+                    "price": 5000,
+                    "type": "Moments intimes, lingeries"
+                },
+                {
+                    "name": "30 Minutes de Silence",
+                    "price": 6000,
+                    "type": "Maison, relaxation"
+                },
+                {
+                    "name": "Persil",
+                    "price": 5000,
+                    "type": "Maison, odeur fraîche"
+                },
+                {
+                    "name": "Anti-Mauvais Esprits",
+                    "price": 3000,
+                    "type": "Protection, purification"
+                }
+            ],
+            "general_faq": [
+                {
+                    "question": "J'ai peur des odeurs trop fortes.",
+                    "answer": "Ne vous inquiétez pas, nos encens ont des odeurs douces. Chaque personne a ses propres préférences, mais nous n'avons pas d'encens à l'odeur agressive."
+                },
+                {
+                    "question": "L'odeur dure-t-elle longtemps ?",
+                    "answer": "Oui, l'odeur reste très longtemps dans la maison. Elle imprègne l'atmosphère durablement."
+                },
+                {
+                    "question": "Pour les vêtements, quel encens me conseillez-vous ?",
+                    "answer": "Je vous recommande le Gueni, le Sarakatane, le Coton, le Santal, ou la Boulette Tchadienne."
+                },
+                {
+                    "question": "Pour la maison, quels encens sont idéaux ?",
+                    "answer": "Pour la maison : Sarakatane, Coquette, Gueni, Coton, Rouge (Nafy), 30 Min de Silence, Persil."
+                },
+                {
+                    "question": "C'est quoi l'Encens Coquette ?",
+                    "answer": "L'encens Coquette est particulièrement recommandé pour les moments intimes. Il parfume la chambre, les lingeries, les dessous."
+                },
+                {
+                    "question": "Comment utiliser l'encens Coquette après la douche ?",
+                    "answer": "Après la douche, le corps étant humide, mettez un peu d'encens dans le feu, arrêtez-vous au-dessus pour que l'odeur monte sur votre corps avant d'aller au lit."
+                },
+                {
+                    "question": "Est-ce que l'odeur est forte ou douce ?",
+                    "answer": "Tous nos encens ont des odeurs douces. Chaque personne a son odorat et ses préférences."
+                },
+                {
+                    "question": "Comment brûler l'encens ?",
+                    "answer": "On le brûle à l'aide d'un encensoir électrique ou avec du charbon industriel ou charbon de bois."
+                }
+            ]
+        },
+        "poudre_fontaine_or": {
+            "name": "Poudre Fontaine d'Or",
+            "price": 3000,
+            "indications": "Aphrodisiaque féminin. Lubrifie, donne envie, fait ressentir du plaisir.",
+            "dosage": {
+                "ponctuel": "1 cuillère à café dans du lait liquide, eau tiède ou yaourt non glacé, à boire 3 heures avant le rapport.",
+                "traitement": "1 cuillère à café matin et soir pendant 7 à 10 jours."
+            },
+            "diabetique": "Version sans sucre disponible.",
+            "faq_specific": [
+                {
+                    "question": "Comment on prend la poudre ?",
+                    "answer": "Vous pouvez la prendre matin et soir le jour des rapports, dans du lait liquide, de l'eau tiède ou du yaourt non glacé."
+                },
+                {
+                    "question": "C'est tous les jours qu'on prend ou occasionnellement ?",
+                    "answer": "Normalement, on utilise le jour des rapports. Mais on peut aussi la prendre comme un traitement sur 7 à 10 jours."
+                },
+                {
+                    "question": "Est-ce que les hommes peuvent l'utiliser ?",
+                    "answer": "Oui, la Poudre Fontaine d'Or est également efficace pour les hommes. La posologie reste la même."
+                },
+                {
+                    "question": "Les diabétiques peuvent-ils l'utiliser ?",
+                    "answer": "Oui, nous avons une version spéciale pour les diabétiques, sans sucre. Précisez-le lors de la commande."
+                },
+                {
+                    "question": "Combien de paquets faut-il pour un traitement ?",
+                    "answer": "Pour un traitement complet, je vous conseille d'acheter deux paquets pour une cure de 10 jours."
+                },
+                {
+                    "question": "Est-ce que ça fait mouiller la femme ?",
+                    "answer": "Oui, c'est exactement l'effet recherché. La poudre Fontaine d'Or lubrifie naturellement. En plus hommes aiment ça."
+                },
+                {
+                    "question": "Est-ce que je peux la prendre en dehors des rapports ?",
+                    "answer": "Oui, en traitement quotidien, elle reste dans le corps et prépare à l'acte."
+                },
+                {
+                    "question": "Quel goût ça a ?",
+                    "answer": "C'est neutre. Vous pouvez la mélanger à du lait ou du yaourt pour atténuer le goût."
+                },
+                {
+                    "question": "Ça fonctionne immédiatement ?",
+                    "answer": "Pour une action rapide, prenez-la 3 heures avant le rapport. En traitement, l'effet est progressif."
+                }
+            ]
+        },
+        "miel_eveil_femme": {
+            "name": "Miel Éveil de Femme",
+            "price": 5000,
+            "indications": "Aphrodisiaque féminin. Lubrifie, donne envie, plaisir.",
+            "dosage": {
+                "ponctuel": "2 cuillères à soupe dans eau tiède, 3 heures avant le rapport.",
+                "traitement": "1 cuillère à soupe matin et soir."
+            },
+            "faq_specific": [
+                {
+                    "question": "Est-ce que c'est pour boire ou pour introduire ?",
+                    "answer": "C'est pour boire, mélangé à de l'eau tiède ou nature, à la petite cuillère."
+                },
+                {
+                    "question": "Est-ce que les hommes peuvent l'utiliser ?",
+                    "answer": "Oui, le miel Éveil de Femme peut aussi être utilisé par les hommes."
+                },
+                {
+                    "question": "Combien de temps avant le rapport ?",
+                    "answer": "Prenez-le 3 heures avant le rapport pour une efficacité optimale. je te donne toujours ce conseil mes clientes. avant que vous mari ne vienne preparez toujours son esprit à un match par des mots d'amour sexy ou direct. ah choux j'ai envie de toi einh ou je veux que tu remue, oubien je veux que tu me gray comme c'est pas permis, je t'attends. les hommes aiment bien ça."
+                },
+                {
+                    "question": "Puis-je le prendre tous les jours ?",
+                    "answer": "Oui, en traitement quotidien, une cuillère à soupe matin et soir."
+                },
+                {
+                    "question": "Est-ce que c'est sucré ?",
+                    "answer": "Oui, c'est un miel naturel. Pour les diabétiques, nous avons une version sans sucre."
+                }
+            ]
+        },
+        "kit_pitchoorr": {
+            "name": "Kit Pitchoorr",
+            "price": 3500,
+            "indications": "Aphrodisiaque féminin.",
+            "composition": "Feuilles de tisane + bonbon caramel.",
+            "dosage": "Mélanger, faire bouillir, boire matin et soir le jour des rapports.",
+            "conseil_combinaison": "Pour problèmes persistants, combinez avec Poudre Fontaine d'Or (6 500 F) ou Miel Éveil de Femme (8 500 F).",
+            "faq_specific": [
+                {
+                    "question": "Le kit Pitchoorr est composé de quoi ?",
+                    "answer": "Il est composé de tisanes (feuilles) et de bonbon caramel."
+                },
+                {
+                    "question": "Comment préparer le kit Pitchoorr ?",
+                    "answer": "Prenez un peu de feuilles et un peu de caramel, mettez au feu, faites bouillir et buvez."
+                },
+                {
+                    "question": "Quand dois-je le prendre ?",
+                    "answer": "Matin et soir le jour des rapports sexuels."
+                },
+                {
+                    "question": "Qu'est-ce que vous me conseillez entre la poudre, le miel et le kit ?",
+                    "answer": "Pour un problème persistant, je vous conseille de prendre au moins deux différents. Le kit est premier, ensuite selon votre budget, vous prenez la poudre à 3 000 F ou le miel à 5 000 F."
+                },
+                {
+                    "question": "Quel est le meilleur combo ?",
+                    "answer": "Kit + Poudre : 6 500 FCFA ou Kit + Miel : 8 500 FCFA."
+                },
+                {
+                    "question": "Combien de temps dure un kit ?",
+                    "answer": "Un kit permet plusieurs préparations selon la quantité utilisée."
+                }
+            ]
+        },
+        "charbon": {
+            "name": "Charbon pour encensoirs",
+            "price": "3 000 F (1 paquet) / 5 500 F (2 paquets)",
+            "description": "Charbon original, gros format, longue durée.",
+            "quantity": "20 gros charbons par paquet.",
+            "faq_specific": [
+                {
+                    "question": "Est-ce que c'est du charbon original ?",
+                    "answer": "Oui, c'est l'original. Il ne s'éteint pas facilement et dure très longtemps."
+                },
+                {
+                    "question": "Est-ce que ça fatigue pas ?",
+                    "answer": "Non, c'est un charbon de qualité qui donne une bonne combustion."
+                },
+                {
+                    "question": "Quand on allume, est-ce que ça s'éteint pas ?",
+                    "answer": "Non, il tient bien et brûle régulièrement."
+                },
+                {
+                    "question": "Combien de charbons y a-t-il dans un paquet ?",
+                    "answer": "Il y a 20 gros charbons à l'intérieur."
+                },
+                {
+                    "question": "Peut-on les casser ?",
+                    "answer": "Oui, on peut les casser en deux ou trois parties pour une utilisation plus ponctuelle."
+                },
+                {
+                    "question": "Combien de temps dure un charbon ?",
+                    "answer": "Le gros format que nous avons actuellement, une fois allumé, prend du temps à finir. Vous pouvez parfumer plusieurs pièces avec le même charbon."
+                }
+            ]
+        },
+        "kit_homme": {
+            "name": "Kit Homme",
+            "price": 20000,
+            "indications": "Éjaculation précoce, érections molles, faiblesse sexuelle, impuissance.",
+            "precaution": "Si diabétique ou hypertendu non régulé, régulariser d'abord.",
+            "types": "Kit Purge (purgatif + buvables) / Kit Sans Purge (buvables + suppositoire).",
+            "dosage": "Ne pas donner par message. Après achat, envoyer les images pour posologie détaillée par vocal.",
+            "faq_specific": [
+                {
+                    "question": "Est-ce qu'un kit peut faire mon affaire ?",
+                    "answer": "La plupart des clients guérissent avec un seul kit. Certains prennent un second kit si nécessaire."
+                },
+                {
+                    "question": "Je suis diabétique, est-ce que je peux prendre ?",
+                    "answer": "Il faut que le diabète soit régularisé d'abord. Si le taux de glycémie descend, là vous pouvez prendre le kit."
+                },
+                {
+                    "question": "Je suis hypertendu, est-ce que je peux prendre ?",
+                    "answer": "Il faut que la tension soit régularisée d'abord. Si la tension descend, là vous pouvez prendre le kit."
+                },
+                {
+                    "question": "C'est quoi la différence entre les deux kits ?",
+                    "answer": "Il y a un kit pour ceux qui se purgent et un kit pour ceux qui ne se purgent pas. Si vous purgez vous dérange pas, prenez le kit purge. Sinon, prenez le kit sans purge."
+                },
+                {
+                    "question": "Quel kit vous conseillez le plus ?",
+                    "answer": "Si vous purgez et que ça ne vous dérange pas, prenez le kit purge car il contient purgatif et buvables. Pour ceux qui ne supportent pas, le kit sans purge est tout buvable sauf un suppositoire le soir."
+                },
+                {
+                    "question": "Combien de temps dure le traitement ?",
+                    "answer": "La plupart des clients guérissent avec un seul kit. D'autres sont partis jusqu'à la fin du traitement et ont pris un autre kit."
+                },
+                {
+                    "question": "Comment connaître la posologie ?",
+                    "answer": "Après l'achat, envoyez les images du kit un par un à notre conseiller. Il vous enverra la posologie détaillée par vocal."
+                },
+                {
+                    "question": "Est-ce que ça marche pour l'éjaculation précoce ?",
+                    "answer": "Oui, c'est une des indications principales du Kit Homme."
+                },
+                {
+                    "question": "Est-ce que ça marche pour l'érection molle ?",
+                    "answer": "Oui, c'est également une indication principale. En tout ton cas, vous allez bander. suivez seulement traitement."
+                },
+                {
+                    "question": "Est-ce que ça marche pour l'impuissance ?",
+                    "answer": "Oui, le Kit Homme est conçu pour traiter l'impuissance sexuelle. nous avons de bon retour pour ce kit."
+                }
+            ]
+        },
+        "lait_seduction": {
+            "name": "Lait de Séduction",
+            "price": 5000,
+            "indications": "Pommade parfumée qui attire, met l'harmonie, la joie et la paix dans le couple.",
+            "usage": {
+                "celibataire": "Se laver avec le savon puis appliquer le lait avant de sortir.",
+                "couple_eloigne": "Se pommader avant d'aller voir son/sa partenaire.",
+                "couple_vivant_ensemble": "Se pommader le soir avant d'aller au lit."
+            },
+            "faq_specific": [
+                {
+                    "question": "Est-ce que le lait marche à distance ?",
+                    "answer": "Non, le lait ne marche pas à distance. C'est l'odeur que la personne en face doit sentir. Il faut être en présence de la personne."
+                },
+                {
+                    "question": "Mon mari ne me parle plus depuis longtemps, est-ce que ça va m'aider ?",
+                    "answer": "Oui, le lait de séduction est très efficace pour rétablir l'harmonie et l'attirance dans le couple. Nous avons d'autres produits qui peuvent accompagner le lait pour un résultat encore plus parfait."
+                },
+                {
+                    "question": "Tout le monde peut utiliser le lait de séduction ?",
+                    "answer": "Oui, que tu sois homme ou femme, célibataire, marié ou en couple, tout le monde peut utiliser le lait de séduction."
+                },
+                {
+                    "question": "Comment l'utiliser quand on est célibataire ?",
+                    "answer": "Les célibataires prennent le lait avec le savon d'abord. Elles se lavent avec le savon, et quand le savon finit, elles mettent le lait partout où elles veulent avant de sortir."
+                },
+                {
+                    "question": "Comment l'utiliser en couple ?",
+                    "answer": "Les gens qui sont en couple mais ne vivent pas ensemble mettent avant d'aller voir leur chéri. Ceux qui vivent ensemble mettent le soir avant d'aller se coucher à côté de leur partenaire."
+                },
+                {
+                    "question": "Est-ce que ça marche pour attirer les hommes ?",
+                    "answer": "Oui, c'est une pommade parfumée à odeur attirante et envoûtante.en plus il aura tellement envie de toi."
+                },
+                {
+                    "question": "Combien de temps dure l'odeur ?",
+                    "answer": "L'odeur persiste plusieurs heures, surtout sur la peau."
+                },
+                {
+                    "question": "Est-ce que ça peut aider à sauver un couple ?",
+                    "answer": "Oui, beaucoup de clients ont constaté une amélioration de leur relation après utilisation."
+                }
+            ]
+        }
+    }
+}
