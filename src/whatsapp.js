@@ -64,20 +64,6 @@ class WhatsAppService {
             log(`⚠️ Aucun fichier image trouvé ! Vérifiez que les fichiers sont bien dans media/images/.`, 'WARNING');
         }
     }
-    // ========== CRÉATION DU CLIENT ==========
-    async createClient() {
-        const executablePath = await chromium.executablePath();
-        return new Client({
-            authStrategy: new LocalAuth({ dataPath: this.sessionPath }),
-            puppeteer: {
-                headless: true,
-                executablePath: executablePath,
-                args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-                defaultViewport: null,
-                protocolTimeout: 120000
-            }
-        });
-    }
 
     // ========== BASE DE CONNAISSANCES ==========
     loadKnowledgeBase() {
@@ -96,6 +82,7 @@ class WhatsAppService {
         }
     }
 
+    // ========== RECHERCHE DANS LA FAQ ==========
     handleFAQ(userMessage) {
         const msgLower = userMessage.toLowerCase().trim();
         const kb = this.knowledge;
@@ -128,7 +115,7 @@ class WhatsAppService {
             }
         }
 
-        // 3. Fiche produit (si le nom du produit est mentionné)
+        // 3. Fiche produit (hors encens)
         for (const [key, product] of Object.entries(products)) {
             if (key === 'encens') continue;
             if (product.name && msgLower.includes(product.name.toLowerCase())) {
@@ -150,7 +137,16 @@ class WhatsAppService {
             }
         }
 
-        // 4. Liste des encens
+        // 4. NOUVEAU : Reconnaître un encens spécifique par son nom
+        if (products.encens && products.encens.list) {
+            for (const encens of products.encens.list) {
+                if (msgLower === encens.name.toLowerCase() || msgLower.includes(encens.name.toLowerCase())) {
+                    return `🔥 *${encens.name}*\n💰 Prix : ${encens.price} FCFA\n📌 Utilisation : ${encens.type}\n\n👉 Souhaitez-vous commander cet encens ? (dites "oui" ou "non")`;
+                }
+            }
+        }
+
+        // 5. Liste des encens (si le mot "encens" est présent)
         if (msgLower.includes('encens') && products.encens && products.encens.list) {
             let answer = "🔥 *Nos encens disponibles :*\n\n";
             products.encens.list.forEach(e => {
@@ -163,6 +159,7 @@ class WhatsAppService {
         return null;
     }
 
+    // ========== RECONNAISSANCE DE CONFIRMATION (mots entiers) ==========
     isConfirmation(text) {
         const txt = text.toLowerCase().trim();
         const keywords = this.knowledge.confirmation_keywords || ['oui', 'ok'];
@@ -170,6 +167,21 @@ class WhatsAppService {
         return validKeywords.some(kw => {
             const regex = new RegExp(`\\b${kw}\\b`, 'i');
             return regex.test(txt);
+        });
+    }
+
+    // ========== CRÉATION DU CLIENT ==========
+    async createClient() {
+        const executablePath = await chromium.executablePath();
+        return new Client({
+            authStrategy: new LocalAuth({ dataPath: this.sessionPath }),
+            puppeteer: {
+                headless: true,
+                executablePath: executablePath,
+                args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+                defaultViewport: null,
+                protocolTimeout: 120000
+            }
         });
     }
 
@@ -203,7 +215,6 @@ class WhatsAppService {
 
             // ============================================================
             // TRAITEMENT DES ANCIENS MESSAGES NON LUS - DÉSACTIVÉ
-            // (cause de ralentissements et déconnexions)
             // ============================================================
             /*
             try {
@@ -872,7 +883,8 @@ class WhatsAppService {
                 if (this.memory[sender].length > 20) this.memory[sender] = this.memory[sender].slice(-20);
                 this.saveMemory();
             } else {
-                await message.reply(`Je ne peux pas répondre pour le moment. Veuillez réessayer ou utiliser "!catalogue" pour voir nos produits.`);
+                // Fallback amélioré
+                await message.reply(`Je n'ai pas bien compris votre demande. Pourriez-vous reformuler ou utiliser "!catalogue" pour découvrir nos produits ?`);
             }
 
         } catch (err) {
