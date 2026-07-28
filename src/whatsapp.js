@@ -23,7 +23,7 @@ class WhatsAppService {
         this.isInitialized = false;
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 20;
-        this.reconnectDelay = 15000; // 15 secondes minimum
+        this.reconnectDelay = 15000;
         this.keepAliveInterval = null;
         this.checkInterval = null;
 
@@ -35,7 +35,6 @@ class WhatsAppService {
         this.storeName = "Au Pays Des Senteurs";
         this.client = null;
 
-        // Chargement de la base de connaissances
         this.knowledge = this.loadKnowledgeBase();
 
         this.ensureDirectories();
@@ -58,14 +57,13 @@ class WhatsAppService {
     logMediaFiles() {
         const imageDir = path.join(__dirname, '../media/images');
         const videoDir = path.join(__dirname, '../media/videos');
-        log(`📁 Dossier images : ${imageDir} - ${listFiles(imageDir).length} fichiers`);
-        log(`📁 Dossier vidéos : ${videoDir} - ${listFiles(videoDir).length} fichiers`);
+        log(`Dossier images : ${imageDir} - ${listFiles(imageDir).length} fichiers`);
+        log(`Dossier vidéos : ${videoDir} - ${listFiles(videoDir).length} fichiers`);
         if (listFiles(imageDir).length === 0) {
-            log(`⚠️ Aucun fichier image trouvé ! Vérifiez que les fichiers sont bien dans media/images/.`, 'WARNING');
+            log(`Aucun fichier image trouvé ! Vérifiez que les fichiers sont bien dans media/images/.`, 'WARNING');
         }
     }
 
-    // ========== BASE DE CONNAISSANCES ==========
     loadKnowledgeBase() {
         try {
             if (fs.existsSync(this.knowledgePath)) {
@@ -74,22 +72,23 @@ class WhatsAppService {
                 return data;
             } else {
                 log('Fichier knowledge_base.json introuvable, utilisation des valeurs par défaut', 'WARNING');
-                return { general_faq: [], products: {}, confirmation_keywords: ['oui', 'o', 'ok'] };
+                return { general_faq: [], products: {}, confirmation_keywords: ['oui', 'ok'] };
             }
         } catch (err) {
             log(`Erreur chargement base de connaissances: ${err.message}`, 'ERROR');
-            return { general_faq: [], products: {}, confirmation_keywords: ['oui', 'o', 'ok'] };
+            return { general_faq: [], products: {}, confirmation_keywords: ['oui', 'ok'] };
         }
     }
 
-    // ========== RECHERCHE DANS LA FAQ ==========
     handleFAQ(userMessage) {
         const msgLower = userMessage.toLowerCase().trim();
         const kb = this.knowledge;
+        log(`[FAQ DEBUG] Recherche pour: "${msgLower}"`, 'DEBUG');
 
         // 1. FAQ générale
         for (const item of kb.general_faq || []) {
             if (msgLower.includes(item.question.toLowerCase()) || item.question.toLowerCase().includes(msgLower)) {
+                log(`[FAQ DEBUG] Trouvé dans FAQ générale: ${item.question}`, 'DEBUG');
                 return item.answer;
             }
         }
@@ -101,6 +100,7 @@ class WhatsAppService {
                 for (const item of product.faq_specific) {
                     const q = item.question.toLowerCase();
                     if (msgLower.includes(q) || q.includes(msgLower)) {
+                        log(`[FAQ DEBUG] Trouvé dans FAQ spécifique de ${key}: ${item.question}`, 'DEBUG');
                         return item.answer;
                     }
                 }
@@ -109,6 +109,7 @@ class WhatsAppService {
                 for (const item of product.general_faq) {
                     const q = item.question.toLowerCase();
                     if (msgLower.includes(q) || q.includes(msgLower)) {
+                        log(`[FAQ DEBUG] Trouvé dans FAQ encens: ${item.question}`, 'DEBUG');
                         return item.answer;
                     }
                 }
@@ -119,47 +120,52 @@ class WhatsAppService {
         for (const [key, product] of Object.entries(products)) {
             if (key === 'encens') continue;
             if (product.name && msgLower.includes(product.name.toLowerCase())) {
-                let answer = `📦 *${product.name}*\n💰 Prix : ${product.price} FCFA\n📝 Indications : ${product.indications}\n`;
+                let answer = `*${product.name}*\nPrix : ${product.price} FCFA\nIndications : ${product.indications}\n`;
                 if (product.dosage) {
                     if (typeof product.dosage === 'object') {
-                        answer += `📋 Posologie :\n`;
+                        answer += `Posologie :\n`;
                         for (const [k, v] of Object.entries(product.dosage)) {
                             answer += `   - ${k} : ${v}\n`;
                         }
                     } else {
-                        answer += `📋 Posologie : ${product.dosage}\n`;
+                        answer += `Posologie : ${product.dosage}\n`;
                     }
                 }
-                if (product.duration) answer += `⏳ Durée : ${product.duration}\n`;
-                if (product.contre_indications) answer += `⚠️ Contre-indications : ${product.contre_indications}\n`;
-                answer += `\n👉 Pour plus d'informations, posez-moi une question précise.`;
+                if (product.duration) answer += `Durée : ${product.duration}\n`;
+                if (product.contre_indications) answer += `Contre-indications : ${product.contre_indications}\n`;
+                answer += `\nPour plus d'informations, posez-moi une question précise.`;
+                log(`[FAQ DEBUG] Trouvé fiche produit pour ${product.name}`, 'DEBUG');
                 return answer;
             }
         }
 
-        // 4. NOUVEAU : Reconnaître un encens spécifique par son nom
+        // 4. Reconnaître un encens spécifique par son nom
         if (products.encens && products.encens.list) {
             for (const encens of products.encens.list) {
-                if (msgLower === encens.name.toLowerCase() || msgLower.includes(encens.name.toLowerCase())) {
-                    return `🔥 *${encens.name}*\n💰 Prix : ${encens.price} FCFA\n📌 Utilisation : ${encens.type}\n\n👉 Souhaitez-vous commander cet encens ? (dites "oui" ou "non")`;
+                const encensNameLower = encens.name.toLowerCase();
+                if (msgLower === encensNameLower || msgLower.includes(encensNameLower)) {
+                    const answer = `*${encens.name}*\nPrix : ${encens.price} FCFA\nUtilisation : ${encens.type}\n\nVous souhaitez commander cet encens ? (répondez oui ou non)`;
+                    log(`[FAQ DEBUG] Trouvé encens spécifique: ${encens.name}`, 'DEBUG');
+                    return answer;
                 }
             }
         }
 
         // 5. Liste des encens (si le mot "encens" est présent)
         if (msgLower.includes('encens') && products.encens && products.encens.list) {
-            let answer = "🔥 *Nos encens disponibles :*\n\n";
+            let answer = "Nos encens disponibles :\n\n";
             products.encens.list.forEach(e => {
                 answer += `- ${e.name} : ${e.price} FCFA (${e.type})\n`;
             });
-            answer += "\n👉 Quel encens vous intéresse ? Je peux vous donner plus de détails.";
+            answer += "\nQuel encens vous intéresse ? Je peux vous donner plus de détails.";
+            log(`[FAQ DEBUG] Liste des encens demandée`, 'DEBUG');
             return answer;
         }
 
+        log(`[FAQ DEBUG] Aucune correspondance trouvée`, 'DEBUG');
         return null;
     }
 
-    // ========== RECONNAISSANCE DE CONFIRMATION (mots entiers) ==========
     isConfirmation(text) {
         const txt = text.toLowerCase().trim();
         const keywords = this.knowledge.confirmation_keywords || ['oui', 'ok'];
@@ -170,7 +176,6 @@ class WhatsAppService {
         });
     }
 
-    // ========== CRÉATION DU CLIENT ==========
     async createClient() {
         const executablePath = await chromium.executablePath();
         return new Client({
@@ -212,50 +217,7 @@ class WhatsAppService {
             console.log(`Contact : ${this.config.CONTACT_PHONE}`);
             console.log(`${this.catalogue.articles.length} articles chargés`);
             console.log('Commandes : !catalogue, info [nom], images [nom], video [nom]');
-
-            // ============================================================
-            // TRAITEMENT DES ANCIENS MESSAGES NON LUS - DÉSACTIVÉ
-            // ============================================================
-            /*
-            try {
-                const chats = await this.client.getChats();
-                log(`📋 ${chats.length} chats récupérés`, 'INFO');
-                let processedCount = 0;
-
-                for (const chat of chats) {
-                    if (chat.isGroup) continue;
-                    const unreadCount = chat.unreadCount || 0;
-                    if (unreadCount === 0) continue;
-
-                    log(`📩 ${chat.name} (${chat.id.user}) - ${unreadCount} message(s) non lu(s)`, 'INFO');
-
-                    const limit = Math.min(unreadCount, 5);
-                    const messages = await chat.fetchMessages({ limit: limit });
-
-                    for (const msg of messages.reverse()) {
-                        if (msg.fromMe) continue;
-                        if (!msg.body && !msg.hasMedia) continue;
-                        if (this.processedMessages.has(msg.id.id)) continue;
-
-                        this.processedMessages.add(msg.id.id);
-                        setTimeout(() => this.processedMessages.delete(msg.id.id), 5000);
-
-                        log(`📩 (ancien) ${chat.name}: ${msg.body?.substring(0, 50) || '[média]'}`, 'MESSAGE');
-
-                        try {
-                            await this.handleMessage(msg);
-                            processedCount++;
-                            await wait(2000);
-                        } catch (err) {
-                            log(`❌ Erreur sur message ${msg.id.id}: ${err.message}`, 'ERROR');
-                        }
-                    }
-                }
-                log(`📬 ${processedCount} anciens messages traités`, 'INFO');
-            } catch (err) {
-                log(`Erreur lors du traitement des anciens messages: ${err.message}`, 'ERROR');
-            }
-            */
+            // Anciens messages désactivés
         });
 
         this.client.on('auth_failure', async (msg) => {
@@ -295,32 +257,26 @@ class WhatsAppService {
         });
     }
 
-    // ========== RECONNEXION AUTOMATIQUE AVEC BACKOFF ==========
     async handleReconnection() {
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
             log(`Trop de tentatives (${this.maxReconnectAttempts}), on réessaye plus tard...`, 'FATAL');
             this.reconnectAttempts = 0;
-            setTimeout(() => this.handleReconnection(), 300000); // 5 minutes
+            setTimeout(() => this.handleReconnection(), 300000);
             return;
         }
-
         this.reconnectAttempts++;
         log(`Tentative de reconnexion ${this.reconnectAttempts}/${this.maxReconnectAttempts}`, 'RECONNECT');
-
         try {
             if (this.client) {
                 await this.client.destroy().catch(() => { });
             }
-
             const delay = Math.min(15000 * Math.pow(1.5, this.reconnectAttempts - 1), 60000);
             log(`Attente de ${delay / 1000}s avant reconnexion`, 'RECONNECT');
             await wait(delay);
-
             this.client = await this.createClient();
             this.setupEvents();
             await this.client.initialize();
-
-            log('✅ Reconnexion réussie', 'SUCCESS');
+            log('Reconnexion réussie', 'SUCCESS');
             this.reconnectAttempts = 0;
         } catch (err) {
             log(`Échec de la reconnexion: ${err.message}`, 'ERROR');
@@ -328,25 +284,20 @@ class WhatsAppService {
         }
     }
 
-    // ========== KEEP ALIVE ET WATCHDOG ==========
     setupKeepAlive() {
-        // Ping toutes les 5 minutes
         this.keepAliveInterval = setInterval(() => {
             if (this.isReady && this.client) {
                 try {
                     this.client.pupPage?.evaluate(() => 'keep-alive').catch(() => { });
                 } catch (e) { }
             }
-        }, 300000); // 5 minutes
-
-        // Vérification de l'état toutes les 10 minutes
+        }, 300000);
         this.checkInterval = setInterval(async () => {
             if (!this.isReady && this.isInitialized) {
                 log('Watchdog: agent non prêt, tentative de reconnexion...', 'WATCHDOG');
                 await this.handleReconnection();
                 return;
             }
-
             if (this.isReady && this.client) {
                 try {
                     const state = await this.client.getState().catch(() => null);
@@ -361,16 +312,14 @@ class WhatsAppService {
                     await this.handleReconnection();
                 }
             }
-        }, 600000); // 10 minutes
+        }, 600000);
     }
 
-    // ========== MÉMOIRE ==========
     loadMemory() {
         if (fs.existsSync(this.memoryPath)) {
             try { this.memory = JSON.parse(fs.readFileSync(this.memoryPath, 'utf8')); } catch (e) { this.memory = {}; }
         }
     }
-
     saveMemory() {
         try { fs.writeFileSync(this.memoryPath, JSON.stringify(this.memory, null, 2)); } catch (e) { }
     }
@@ -385,22 +334,22 @@ class WhatsAppService {
         log(`Nouvelle commande: ${order.produit} x ${order.quantite}`);
     }
 
-    // ========== ENVOI D'IMAGES ==========
+    // ========== ENVOI D'IMAGES ET VIDÉOS (inchangé, mais sans émojis dans les messages) ==========
     async sendImage(message, article, imageName) {
         const imagePath = getImagePath(imageName);
-        log(`📸 Tentative d'envoi de l'image : ${imagePath}`);
+        log(`Tentative d'envoi de l'image : ${imagePath}`);
         if (!fileExists(imagePath)) {
-            log(`❌ Image manquante : ${imagePath}`, 'ERROR');
+            log(`Image manquante : ${imagePath}`, 'ERROR');
             await message.reply(`La photo de ${article.nom} n'est pas encore disponible.`);
             return false;
         }
         try {
             const media = MessageMedia.fromFilePath(imagePath);
             await message.reply(media, undefined, { caption: `${article.nom}` });
-            log(`✅ Image envoyée avec succès : ${imageName}`);
+            log(`Image envoyée avec succès : ${imageName}`);
             return true;
         } catch (err) {
-            log(`❌ Erreur envoi image: ${err.message}`, 'ERROR');
+            log(`Erreur envoi image: ${err.message}`, 'ERROR');
             await message.reply(`Erreur lors de l'envoi de la photo.`);
             return false;
         }
@@ -408,7 +357,6 @@ class WhatsAppService {
 
     async sendAllImages(message, article) {
         const images = getArticleImages(article);
-        log(`📸 Nombre d'images pour ${article.nom} : ${images.length}`);
         if (!images.length) {
             await message.reply(`Aucune photo disponible pour ${article.nom}.`);
             return;
@@ -420,22 +368,21 @@ class WhatsAppService {
         }
     }
 
-    // ========== ENVOI DE VIDÉOS ==========
     async sendVideo(message, article, videoName) {
         const videoPath = getVideoPath(videoName);
-        log(`🎬 Tentative d'envoi de la vidéo : ${videoPath}`);
+        log(`Tentative d'envoi de la vidéo : ${videoPath}`);
         if (!fileExists(videoPath)) {
-            log(`❌ Vidéo manquante : ${videoPath}`, 'ERROR');
+            log(`Vidéo manquante : ${videoPath}`, 'ERROR');
             await message.reply(`La vidéo de ${article.nom} n'est pas encore disponible.`);
             return false;
         }
         try {
             const media = MessageMedia.fromFilePath(videoPath);
             await message.reply(media, undefined, { caption: `${article.nom} (vidéo)` });
-            log(`✅ Vidéo envoyée avec succès : ${videoName}`);
+            log(`Vidéo envoyée avec succès : ${videoName}`);
             return true;
         } catch (err) {
-            log(`❌ Erreur envoi vidéo: ${err.message}`, 'ERROR');
+            log(`Erreur envoi vidéo: ${err.message}`, 'ERROR');
             await message.reply(`Erreur lors de l'envoi de la vidéo.`);
             return false;
         }
@@ -443,7 +390,6 @@ class WhatsAppService {
 
     async sendAllVideos(message, article) {
         const videos = getArticleVideos(article);
-        log(`🎬 Nombre de vidéos pour ${article.nom} : ${videos.length}`);
         if (!videos.length) {
             await message.reply(`Aucune vidéo disponible pour ${article.nom}.`);
             return;
@@ -455,10 +401,10 @@ class WhatsAppService {
         }
     }
 
-    // ========== PHRASES ==========
+    // ========== PHRASES (sans émojis, style ivoirien) ==========
     getIntro() {
         const phrases = [
-            `Bonjour, je suis KADI de la boutique Au Pays Des Senteurs. Comment puis-je vous aider ?`,
+            `Bonjour, c'est KADI de la boutique Au Pays Des Senteurs. Comment je peux vous aider ?`,
             `Bonjour et bienvenue chez Au Pays Des Senteurs. Je suis KADI, votre conseillère.`,
             `Bonjour, merci de me contacter. Je suis KADI, je vous aide à découvrir nos produits.`,
             `Bonjour, je vous souhaite une bonne journée. Ici KADI, votre conseillère en produits bien-être.`
@@ -478,9 +424,9 @@ class WhatsAppService {
 
     getConfirmation() {
         const phrases = [
-            `Confirmez-vous cette commande ? (répondez par oui ou non)`,
+            `Vous confirmez cette commande ? (répondez oui ou non)`,
             `Voulez-vous valider cette commande ?`,
-            `Souhaitez-vous passer commande maintenant ?`
+            `Vous souhaitez passer commande maintenant ?`
         ];
         return phrases[Math.floor(Math.random() * phrases.length)];
     }
@@ -510,79 +456,43 @@ class WhatsAppService {
         log(`Message de ${senderName}: ${msg.substring(0, 50)}`);
 
         try {
-            // ============================================================
-            // 1. DÉTECTION DES MESSAGES VOCAUX (ultra-robuste)
-            // ============================================================
+            // 1. Messages vocaux
             let isVoice = false;
-
-            if (message.type === 'ptt' || message.type === 'audio') {
-                isVoice = true;
-            }
-
-            if (message._data) {
-                if (message._data.type === 'ptt' || message._data.type === 'audio') {
-                    isVoice = true;
-                }
-                if (message._data.mimetype && message._data.mimetype.startsWith('audio/')) {
-                    isVoice = true;
-                }
-            }
-
-            if (message.hasMedia && message.media) {
-                if (message.media.mimetype && message.media.mimetype.startsWith('audio/')) {
-                    isVoice = true;
-                }
-                if (message.media.filename) {
-                    const ext = message.media.filename.toLowerCase().split('.').pop();
-                    if (['ogg', 'mp3', 'm4a', 'opus', 'wav'].includes(ext)) {
-                        isVoice = true;
-                    }
-                }
-            }
-
-            if (!isVoice && message.hasMedia && !message.body) {
-                isVoice = true;
-            }
+            if (message.type === 'ptt' || message.type === 'audio') isVoice = true;
+            if (message._data && (message._data.type === 'ptt' || message._data.type === 'audio')) isVoice = true;
+            if (message.hasMedia && message.media && message.media.mimetype && message.media.mimetype.startsWith('audio/')) isVoice = true;
+            if (!isVoice && message.hasMedia && !message.body) isVoice = true;
 
             if (isVoice) {
-                log(`🎤 Message vocal détecté (type: ${message.type}, hasMedia: ${message.hasMedia})`, 'INFO');
+                log(`Message vocal détecté (type: ${message.type})`, 'INFO');
                 await message.reply(
-                    `Je vous remercie pour votre message vocal. Toutefois, pour un traitement plus rapide et précis, je vous invite à formuler votre demande par écrit. Cela me permettra de mieux vous orienter vers nos produits. Merci de votre compréhension.`
+                    `Merci pour votre message vocal. Pour un traitement plus rapide et précis, écrivez votre demande en texte, s'il vous plaît. Cela me permettra de mieux vous orienter vers nos produits. Merci de votre compréhension.`
                 );
                 return;
             }
 
-            // ============================================================
-            // 2. SALUTATIONS / MERCI / AU REVOIR
-            // ============================================================
+            // 2. Salutations, merci, au revoir
             if (['bonjour', 'salut', 'hello', 'hi', 'bonsoir'].some(s => msgLower.includes(s))) {
                 await message.reply(this.getIntro());
                 return;
             }
-
             if (msgLower.includes('merci')) {
                 await message.reply(`Avec plaisir. N'hésitez pas si vous avez d'autres questions.`);
                 return;
             }
-
             if (msgLower.includes('au revoir') || msgLower.includes('a plus') || msgLower.includes('bye')) {
                 await message.reply(`Au revoir, à bientôt chez Au Pays Des Senteurs.`);
                 return;
             }
 
-            // ============================================================
-            // 3. RECADRAGE HORS SUJET
-            // ============================================================
+            // 3. Recadrage hors sujet
             const horsSujet = ['amour', 'relation', 'sexe', 'coucher', 'sortir', 'rendez-vous', 'mariage'];
-            if (horsSujet.some(m => msgLower.includes(m)) &&
-                !msgLower.includes('produit') && !msgLower.includes('bien-etre')) {
+            if (horsSujet.some(m => msgLower.includes(m)) && !msgLower.includes('produit') && !msgLower.includes('bien-etre')) {
                 await message.reply(this.getRecadrage());
                 return;
             }
 
-            // ============================================================
-            // 3bis. DÉTECTION DES DEMANDES GÉNÉRIQUES DE PRODUITS
-            // ============================================================
+            // 3bis. Demandes génériques de produits
             const genericProductPhrases = [
                 'puis-je avoir plus d\'information sur votre produit',
                 'plus d\'infos sur le produit',
@@ -601,9 +511,7 @@ class WhatsAppService {
                 return;
             }
 
-            // ============================================================
-            // 4. GESTION DES ÉTATS DE COLLECTE D'INFOS (nom, commune/ville, numéro)
-            // ============================================================
+            // 4. Gestion des états de collecte d'infos (nom, commune/ville, numéro)
             if (this.userStates.has(sender)) {
                 const state = this.userStates.get(sender);
                 const response = msgLower;
@@ -648,17 +556,12 @@ class WhatsAppService {
                     await message.reply(`Commande confirmée et enregistrée. Merci ! Un conseiller vous contactera au ${this.config.CONTACT_PHONE} pour la livraison.`);
                     this.userStates.delete(sender);
                     this.pendingOrders.delete(sender);
-
-                    // Demander si le client souhaite autre chose
-                    await message.reply(`Souhaitez-vous autre chose ? (répondez par oui ou non)`);
+                    await message.reply(`Souhaitez-vous autre chose ? (répondez oui ou non)`);
                     return;
                 }
             }
 
-            // ============================================================
-            // 5. COMMANDES INTERNES
-            // ============================================================
-
+            // 5. Commandes internes
             if (msgLower === '!catalogue' || msgLower === '!cat') {
                 const categoriesCount = this.catalogue.getCategoriesWithCount();
                 let reponse = `Catalogue Au Pays Des Senteurs\n\n`;
@@ -760,9 +663,7 @@ class WhatsAppService {
                 return;
             }
 
-            // ============================================================
-            // 6. GESTION DE LA COMMANDE (détection renforcée)
-            // ============================================================
+            // 6. Gestion de la commande (détection renforcée)
             const commandKeywords = ['commande', 'commander', 'je prends', 'je veux', 'acheter', 'reserver'];
             const isCommand = commandKeywords.some(kw => msgLower.includes(kw)) &&
                 !msgLower.includes('prix') &&
@@ -793,9 +694,7 @@ class WhatsAppService {
                 return;
             }
 
-            // ============================================================
-            // 7. CONFIRMATION DE COMMANDE (reconnaissance étendue)
-            // ============================================================
+            // 7. Confirmation de commande
             if (this.isConfirmation(msg)) {
                 log(`[DEBUG] Confirmation reçue. pendingOrders contient : ${this.pendingOrders.has(sender) ? 'OUI' : 'NON'}`, 'DEBUG');
                 if (this.pendingOrders.has(sender)) {
@@ -819,9 +718,7 @@ class WhatsAppService {
                 return;
             }
 
-            // ============================================================
-            // 8. GESTION DE "SOUHAITEZ-VOUS AUTRE CHOSE ?"
-            // ============================================================
+            // 8. Gestion "Souhaitez-vous autre chose ?"
             if (this.userStates.has(sender) && this.userStates.get(sender).step === 'fin') {
                 const response = msgLower;
                 if (this.isConfirmation(response)) {
@@ -830,26 +727,22 @@ class WhatsAppService {
                     return;
                 } else if (response === 'non' || response === 'n') {
                     this.userStates.delete(sender);
-                    await message.reply(`Nous vous remercions pour votre commande. Prenez soin de vous et à la prochaine ! 🙏`);
+                    await message.reply(`Nous vous remercions pour votre commande. Prenez soin de vous et à la prochaine !`);
                     return;
                 } else {
-                    await message.reply(`Je n'ai pas bien compris. Souhaitez-vous autre chose ? (répondez par oui ou non)`);
+                    await message.reply(`Je n'ai pas bien compris. Souhaitez-vous autre chose ? (répondez oui ou non)`);
                     return;
                 }
             }
 
-            // ============================================================
-            // 9. FAQ (avant DeepSeek)
-            // ============================================================
+            // 9. FAQ
             const faqAnswer = this.handleFAQ(msg);
             if (faqAnswer) {
                 await message.reply(faqAnswer);
                 return;
             }
 
-            // ============================================================
-            // 10. RECHERCHE PAR CATÉGORIE
-            // ============================================================
+            // 10. Recherche par catégorie
             const categories = this.catalogue.categories || [];
             const catMatch = categories.find(c => msgLower.includes(c.toLowerCase()));
             if (catMatch) {
@@ -860,11 +753,8 @@ class WhatsAppService {
                 }
             }
 
-            // ============================================================
-            // 11. APPEL À DEEPSEEK POUR TOUTE AUTRE DEMANDE
-            // ============================================================
+            // 11. DeepSeek
             log(`[DEBUG] Aucune correspondance FAQ, appel à DeepSeek.`);
-
             const catalogueContext = this.catalogue.articles
                 .filter(a => a.disponible)
                 .map(a => `- ${a.nom} : ${a.prix ? a.prix.toLocaleString() : 'N/A'} FCFA (${a.categorie})`)
@@ -883,8 +773,7 @@ class WhatsAppService {
                 if (this.memory[sender].length > 20) this.memory[sender] = this.memory[sender].slice(-20);
                 this.saveMemory();
             } else {
-                // Fallback amélioré
-                await message.reply(`Je n'ai pas bien compris votre demande. Pourriez-vous reformuler ou utiliser "!catalogue" pour découvrir nos produits ?`);
+                await message.reply(`Je n'ai pas bien compris votre demande. Pouvez-vous reformuler ou utiliser "!catalogue" pour voir nos produits ?`);
             }
 
         } catch (err) {
@@ -893,7 +782,6 @@ class WhatsAppService {
         }
     }
 
-    // ========== DÉMARRAGE ET RECONNEXION FORCÉE ==========
     async start() {
         try {
             log('Démarrage...');
