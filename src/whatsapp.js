@@ -167,10 +167,16 @@ class WhatsAppService {
     }
 
     isConfirmation(text) {
-        const txt = text.toLowerCase().trim();
-        const keywords = this.knowledge.confirmation_keywords || ['oui', 'ok'];
-        const validKeywords = keywords.filter(kw => kw.length >= 2);
-        return validKeywords.some(kw => {
+        // Nettoyer le texte : supprimer les espaces, retours à la ligne, caractères spéciaux
+        const txt = text.toLowerCase().trim().replace(/\s+/g, ' ');
+        const keywords = [
+            'oui', 'ok', "d'accord", 'je confirme', 'je le veux',
+            "c'est confirmé", 'envoyez', 'envoyer', 'oui oui',
+            'oui je confirme', 'ok je confirme', 'oui envoyer moi',
+            'confirmer', 'confirmé', 'yes', 'yep', 'yeah', 'si'
+        ];
+        // Vérifier si le message contient l'un des mots-clés (mots entiers)
+        return keywords.some(kw => {
             const regex = new RegExp(`\\b${kw}\\b`, 'i');
             return regex.test(txt);
         });
@@ -438,6 +444,11 @@ class WhatsAppService {
             `Je préfère vous parler de nos produits bien-être. Que recherchez-vous ?`
         ];
         return phrases[Math.floor(Math.random() * phrases.length)];
+    }
+
+    // ========== LIEN DU CATALOGUE ==========
+    getCatalogLink() {
+        return 'https://wa.me/c/22505730455';
     }
 
     // ========== TRAITEMENT DES MESSAGES ==========
@@ -711,11 +722,12 @@ class WhatsAppService {
                 if (this.pendingOrders.has(sender)) {
                     this.pendingOrders.delete(sender);
                     if (this.userStates.has(sender)) this.userStates.delete(sender);
-                    await message.reply(`Commande annulée.`);
+                    await message.reply(`Commande annulée. Si vous souhaitez voir notre catalogue, c'est ici : ${this.getCatalogLink()}`);
                 } else {
-                    await message.reply(`Vous n'avez pas de commande en attente. Si vous souhaitez commander, dites "je commande [produit]".`);
+                    await message.reply(`Vous n'avez pas de commande en attente. Découvrez notre catalogue : ${this.getCatalogLink()}`);
                 }
                 return;
+          
             }
 
             // 8. Gestion "Souhaitez-vous autre chose ?"
@@ -749,6 +761,9 @@ class WhatsAppService {
                 const results = this.catalogue.searchByCategory(catMatch);
                 if (results.length) {
                     await message.reply(this.catalogue.formatList(results, `Catégorie ${catMatch}`));
+                    return;
+                } else {
+                    await message.reply(`Je n'ai pas trouvé de produits dans la catégorie "${catMatch}". Consultez notre catalogue complet : ${this.getCatalogLink()}`);
                     return;
                 }
             }
