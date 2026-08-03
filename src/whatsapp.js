@@ -85,6 +85,12 @@ class WhatsAppService {
         const kb = this.knowledge;
         log(`[FAQ DEBUG] Recherche pour: "${msgLower}"`, 'DEBUG');
 
+        // 0. Mots-clés entreprise (prioritaires)
+        const entrepriseKeywords = ['entreprise', 'boutique', 'renseignement', 'information sur votre entreprise', 'votre société', 'qui êtes-vous', 'présentation', 'à propos', 'en savoir plus sur votre entreprise'];
+        if (entrepriseKeywords.some(kw => msgLower.includes(kw))) {
+            return "Au Pays Des Senteurs est une boutique spécialisée dans les produits de bien-être et de la pharmacopée traditionnelle ivoirienne. Nous proposons des encens, des aphrodisiaques, des soins et bien d'autres produits naturels. Pour plus d'informations, n'hésitez pas à consulter notre catalogue (tapez !catalogue) ou à me poser des questions précises.";
+        }
+
         // 1. FAQ générale
         for (const item of kb.general_faq || []) {
             if (msgLower.includes(item.question.toLowerCase()) || item.question.toLowerCase().includes(msgLower)) {
@@ -139,35 +145,30 @@ class WhatsAppService {
             }
         }
 
-        // 4. Reconnaître un encens spécifique par son nom
+        // 4. Encens spécifique
         if (products.encens && products.encens.list) {
             for (const encens of products.encens.list) {
                 const encensNameLower = encens.name.toLowerCase();
                 if (msgLower === encensNameLower || msgLower.includes(encensNameLower)) {
-                    const answer = `*${encens.name}*\nPrix : ${encens.price} FCFA\nUtilisation : ${encens.type}\n\nVous souhaitez commander cet encens ? (répondez oui ou non)`;
-                    log(`[FAQ DEBUG] Trouvé encens spécifique: ${encens.name}`, 'DEBUG');
-                    return answer;
+                    return `*${encens.name}*\nPrix : ${encens.price} FCFA\nUtilisation : ${encens.type}\n\nSouhaitez-vous commander cet encens ? (répondez oui ou non)`;
                 }
             }
         }
 
-        // 5. Liste des encens (si le mot "encens" est présent)
+        // 5. Liste des encens
         if (msgLower.includes('encens') && products.encens && products.encens.list) {
             let answer = "Nos encens disponibles :\n\n";
             products.encens.list.forEach(e => {
                 answer += `- ${e.name} : ${e.price} FCFA (${e.type})\n`;
             });
             answer += "\nQuel encens vous intéresse ? Je peux vous donner plus de détails.";
-            log(`[FAQ DEBUG] Liste des encens demandée`, 'DEBUG');
             return answer;
         }
 
-        log(`[FAQ DEBUG] Aucune correspondance trouvée`, 'DEBUG');
         return null;
     }
 
     isConfirmation(text) {
-        // Nettoyer le texte : supprimer les espaces, retours à la ligne, caractères spéciaux
         const txt = text.toLowerCase().trim().replace(/\s+/g, ' ');
         const keywords = [
             'oui', 'ok', "d'accord", 'je confirme', 'je le veux',
@@ -175,11 +176,74 @@ class WhatsAppService {
             'oui je confirme', 'ok je confirme', 'oui envoyer moi',
             'confirmer', 'confirmé', 'yes', 'yep', 'yeah', 'si'
         ];
-        // Vérifier si le message contient l'un des mots-clés (mots entiers)
         return keywords.some(kw => {
             const regex = new RegExp(`\\b${kw}\\b`, 'i');
             return regex.test(txt);
         });
+    }
+
+    // Extraire produit et quantité d'un message naturel
+    extractProductAndQuantity(text) {
+        const msg = text.toLowerCase().trim();
+        const kb = this.knowledge;
+        const products = kb.products || {};
+        const allProductNames = [];
+        const productMap = {};
+
+        for (const [key, product] of Object.entries(products)) {
+            if (key === 'encens') {
+                if (product.list) {
+                    product.list.forEach(e => {
+                        allProductNames.push(e.name.toLowerCase());
+                        productMap[e.name.toLowerCase()] = { name: e.name, type: 'encens' };
+                    });
+                }
+            } else {
+                if (product.name) {
+                    const name = product.name.toLowerCase();
+                    allProductNames.push(name);
+                    productMap[name] = { name: product.name, type: key };
+                }
+            }
+        }
+
+        let foundProduct = null;
+        let foundName = '';
+        for (const pname of allProductNames) {
+            if (msg.includes(pname)) {
+                foundProduct = productMap[pname];
+                foundName = pname;
+                break;
+            }
+        }
+
+        if (!foundProduct) return null;
+
+        let quantite = 1;
+        const quantityMatch = msg.match(/(\d+)\s*(?:de|d'|du|des)?\s*$/);
+        if (quantityMatch) {
+            quantite = parseInt(quantityMatch[1]);
+        } else {
+            const regex = new RegExp(`(\\d+)\\s*(?:${foundName})`);
+            const match = msg.match(regex);
+            if (match) quantite = parseInt(match[1]);
+        }
+
+        return { product: foundProduct, quantite, nom: foundProduct.name };
+    }
+
+    getNaturalPrompt() {
+        const phrases = [
+            `D'accord, pourriez-vous préciser le produit et la quantité ?`,
+            `Je vous écoute, quel produit souhaitez-vous commander ? Et en quelle quantité ?`,
+            `Pas de problème, dites-moi simplement le produit et la quantité.`,
+            `Très bien, pour commander, indiquez le produit et le nombre.`
+        ];
+        return phrases[Math.floor(Math.random() * phrases.length)];
+    }
+
+    getCatalogLink() {
+        return 'https://wa.me/c/22505730455';
     }
 
     async createClient() {
@@ -223,7 +287,6 @@ class WhatsAppService {
             console.log(`Contact : ${this.config.CONTACT_PHONE}`);
             console.log(`${this.catalogue.articles.length} articles chargés`);
             console.log('Commandes : !catalogue, info [nom], images [nom], video [nom]');
-            // Anciens messages désactivés
         });
 
         this.client.on('auth_failure', async (msg) => {
@@ -251,7 +314,11 @@ class WhatsAppService {
         });
 
         this.client.on('message', async message => {
-            if (this.isReady) await this.handleMessage(message);
+            if (this.isReady) {
+                // Ne pas répondre dans les groupes
+                if (message.from.endsWith('@g.us')) return;
+                await this.handleMessage(message);
+            }
         });
 
         this.client.on('change_state', (state) => {
@@ -340,7 +407,7 @@ class WhatsAppService {
         log(`Nouvelle commande: ${order.produit} x ${order.quantite}`);
     }
 
-    // ========== ENVOI D'IMAGES ET VIDÉOS (inchangé, mais sans émojis dans les messages) ==========
+    // ========== ENVOI D'IMAGES ET VIDÉOS ==========
     async sendImage(message, article, imageName) {
         const imagePath = getImagePath(imageName);
         log(`Tentative d'envoi de l'image : ${imagePath}`);
@@ -356,7 +423,7 @@ class WhatsAppService {
             return true;
         } catch (err) {
             log(`Erreur envoi image: ${err.message}`, 'ERROR');
-            await message.reply(`Erreur lors de l'envoi de la photo.`);
+            await message.reply(`patientez un moment. je vais vous envoyer la photo. en attendant, consultez notre catalogue ici: ${this.getCatalogLink()}`);
             return false;
         }
     }
@@ -365,6 +432,7 @@ class WhatsAppService {
         const images = getArticleImages(article);
         if (!images.length) {
             await message.reply(`Aucune photo disponible pour ${article.nom}.`);
+            await message.reply(`Consultez notre catalogue ici: ${this.getCatalogLink()}`);
             return;
         }
         await message.reply(`Voici les photos de ${article.nom} :`);
@@ -389,7 +457,7 @@ class WhatsAppService {
             return true;
         } catch (err) {
             log(`Erreur envoi vidéo: ${err.message}`, 'ERROR');
-            await message.reply(`Erreur lors de l'envoi de la vidéo.`);
+            await message.reply(`patientez un moment. je vais vous envoyer la vidéo. en attendant, consultez notre catalogue ici: ${this.getCatalogLink()}`);
             return false;
         }
     }
@@ -407,12 +475,12 @@ class WhatsAppService {
         }
     }
 
-    // ========== PHRASES (sans émojis, style ivoirien) ==========
+    // ========== PHRASES NATURELLES (sans émojis) ==========
     getIntro() {
         const phrases = [
             `Bonjour, c'est KADI de la boutique Au Pays Des Senteurs. Comment je peux vous aider ?`,
             `Bonjour et bienvenue chez Au Pays Des Senteurs. Je suis KADI, votre conseillère.`,
-            `Bonjour, merci de me contacter. Je suis KADI, je vous aide à découvrir nos produits.`,
+            `Bonjour, merci de me contacter. Je suis KADI, je vous aide à découvrir nos produits ici: ${this.getCatalogLink()}.`,
             `Bonjour, je vous souhaite une bonne journée. Ici KADI, votre conseillère en produits bien-être.`
         ];
         return phrases[Math.floor(Math.random() * phrases.length)];
@@ -430,7 +498,7 @@ class WhatsAppService {
 
     getConfirmation() {
         const phrases = [
-            `Vous confirmez cette commande ? (répondez oui ou non)`,
+            `Vous confirmez cette commande ?`,
             `Voulez-vous valider cette commande ?`,
             `Vous souhaitez passer commande maintenant ?`
         ];
@@ -440,26 +508,24 @@ class WhatsAppService {
     getRecadrage() {
         const phrases = [
             `Je suis là pour vous conseiller sur nos produits. Puis-je vous aider à trouver quelque chose ?`,
-            `Désolée, je ne peux pas répondre à ça. Je vous propose de voir notre catalogue.`,
-            `Je préfère vous parler de nos produits bien-être. Que recherchez-vous ?`
+            `Désolée, je ne peux pas répondre à ça. Je vous propose de voir notre catalogue ici: ${this.getCatalogLink()}.`,
+            `Je préfère vous parler de nos produits bien-être. Que recherchez-vous? ou bien voilà mon catalogue : ${this.getCatalogLink()} ?`
         ];
         return phrases[Math.floor(Math.random() * phrases.length)];
     }
 
-    // ========== LIEN DU CATALOGUE ==========
-    getCatalogLink() {
-        return 'https://wa.me/c/22505730455';
-    }
-
     // ========== TRAITEMENT DES MESSAGES ==========
     async handleMessage(message) {
+        // Ne pas répondre dans les groupes (déjà filtré dans setupEvents, mais sécurité)
         if (message.from.endsWith('@g.us')) return;
-        if (!message.body) return;
+
+        // Ne pas ignorer les messages avec média
+        if (!message.body && !message.hasMedia) return;
         if (this.processedMessages.has(message.id.id)) return;
         this.processedMessages.add(message.id.id);
         setTimeout(() => this.processedMessages.delete(message.id.id), 3000);
 
-        const msg = message.body.trim();
+        const msg = message.body ? message.body.trim() : '';
         const sender = message.from;
         const senderName = message._data?.notifyName || 'Client';
         const msgLower = msg.toLowerCase();
@@ -472,14 +538,27 @@ class WhatsAppService {
             if (message.type === 'ptt' || message.type === 'audio') isVoice = true;
             if (message._data && (message._data.type === 'ptt' || message._data.type === 'audio')) isVoice = true;
             if (message.hasMedia && message.media && message.media.mimetype && message.media.mimetype.startsWith('audio/')) isVoice = true;
-            if (!isVoice && message.hasMedia && !message.body) isVoice = true;
+            if (!isVoice && message.hasMedia && !msg) isVoice = true;
 
             if (isVoice) {
-                log(`Message vocal détecté (type: ${message.type})`, 'INFO');
+                log(`Message vocal détecté`, 'INFO');
                 await message.reply(
-                    `Merci pour votre message vocal. Pour un traitement plus rapide et précis, écrivez votre demande en texte, s'il vous plaît. Cela me permettra de mieux vous orienter vers nos produits. Merci de votre compréhension.`
+                    `Merci pour votre message vocal. Pour mieux vous servir, écrivez svp votre demande.`
                 );
                 return;
+            }
+
+            // 1bis. Messages avec image
+            if (message.hasMedia && message.media && message.media.mimetype && message.media.mimetype.startsWith('image/')) {
+                log(`Image reçue de ${senderName}`, 'INFO');
+                const imageReply = `Merci pour votre image. Pour mieux vous aider, est -ce que vous pouvez ecrire le nom du produit ? Je ne voir pas bien l'image.`;
+                if (!msg) {
+                    await message.reply(imageReply);
+                    return;
+                } else {
+                    await message.reply(imageReply);
+                    // Ne pas retourner, continuer pour le texte
+                }
             }
 
             // 2. Salutations, merci, au revoir
@@ -488,7 +567,7 @@ class WhatsAppService {
                 return;
             }
             if (msgLower.includes('merci')) {
-                await message.reply(`Avec plaisir. N'hésitez pas si vous avez d'autres questions.`);
+                await message.reply(`Avec plaisir. N'hésitez pas si vous avez d'autres questions.ou consulter notre catalogue ici: ${this.getCatalogLink()}`);
                 return;
             }
             if (msgLower.includes('au revoir') || msgLower.includes('a plus') || msgLower.includes('bye')) {
@@ -503,7 +582,7 @@ class WhatsAppService {
                 return;
             }
 
-            // 3bis. Demandes génériques de produits
+            // 4. Demandes génériques de produits
             const genericProductPhrases = [
                 'puis-je avoir plus d\'information sur votre produit',
                 'plus d\'infos sur le produit',
@@ -517,19 +596,19 @@ class WhatsAppService {
             ];
             if (genericProductPhrases.some(phrase => msgLower.includes(phrase))) {
                 await message.reply(
-                    `Je ne vois pas bien l'image du produit dont vous parlez. Pouvez-vous écrire le nom du produit pour que je puisse mieux vous servir ? Merci.`
+                    `Je ne vois pas bien l'image du produit dont vous parlez. Pouvez-vous écrire le nom du produit pour que je puisse mieux vous servir ? ou consulter notre catalogue ici: ${this.getCatalogLink()}`
                 );
                 return;
             }
 
-            // 4. Gestion des états de collecte d'infos (nom, commune/ville, numéro)
+            // 5. Gestion des états de collecte d'infos (nom, commune/ville, numéro)
             if (this.userStates.has(sender)) {
                 const state = this.userStates.get(sender);
                 const response = msgLower;
                 if (response === 'non' || response === 'annuler' || response === 'stop' || response === 'annulation') {
                     this.userStates.delete(sender);
                     this.pendingOrders.delete(sender);
-                    await message.reply(`Commande annulée. N'hésitez pas si vous souhaitez commander un autre produit.`);
+                    await message.reply(`Commande annulée. N'hésitez pas si vous souhaitez commander un autre produit. en consultant notre catalogue ici: ${this.getCatalogLink()}`);
                     return;
                 }
                 const order = state.command;
@@ -572,7 +651,7 @@ class WhatsAppService {
                 }
             }
 
-            // 5. Commandes internes
+            // 6. Commandes internes
             if (msgLower === '!catalogue' || msgLower === '!cat') {
                 const categoriesCount = this.catalogue.getCategoriesWithCount();
                 let reponse = `Catalogue Au Pays Des Senteurs\n\n`;
@@ -587,7 +666,7 @@ class WhatsAppService {
                         reponse += '\n';
                     }
                 }
-                reponse += `Pour plus d'infos : "info [nom]". Pour commander : "je commande [nom]"`;
+                reponse += `Pour plus d'infos : "info [nom]". Pour commander : dites "je commande [nom]" ou "je veux [nom]".`;
                 await message.reply(reponse);
                 return;
             }
@@ -661,7 +740,7 @@ class WhatsAppService {
                 const query = msg.substring(5);
                 const results = this.catalogue.search(query);
                 if (!results.length) {
-                    await message.reply(`Je n'ai pas trouvé "${query}".`);
+                    await message.reply(`Je n'ai pas trouvé "${query}". Consultez notre catalogue : ${this.getCatalogLink()}`);
                     return;
                 }
                 if (results.length === 1) {
@@ -674,7 +753,25 @@ class WhatsAppService {
                 return;
             }
 
-            // 6. Gestion de la commande (détection renforcée)
+            // ============================================================
+            // 7. GESTION DE LA COMMANDE (naturelle)
+            // ============================================================
+            // Essayer d'extraire produit et quantité
+            const extracted = this.extractProductAndQuantity(msg);
+            if (extracted && !this.isConfirmation(msg)) {
+                const { product, quantite, nom } = extracted;
+                const catalogueResult = this.catalogue.search(nom);
+                if (catalogueResult.length) {
+                    const article = catalogueResult[0];
+                    const total = article.prix * quantite;
+                    const reponse = `Commande enregistrée.\nProduit : ${article.nom}\nQuantité : ${quantite}\nTotal : ${total.toLocaleString()} FCFA\n${this.getConfirmation()}`;
+                    await message.reply(reponse);
+                    this.pendingOrders.set(sender, { article, quantite, total, clientName: senderName, message: msg });
+                    log(`[DEBUG] Commande stockée dans pendingOrders pour ${senderName}`, 'DEBUG');
+                    return;
+                }
+            }
+
             const commandKeywords = ['commande', 'commander', 'je prends', 'je veux', 'acheter', 'reserver'];
             const isCommand = commandKeywords.some(kw => msgLower.includes(kw)) &&
                 !msgLower.includes('prix') &&
@@ -692,7 +789,7 @@ class WhatsAppService {
                 else if (this.lastArticleByUser.has(sender)) article = this.lastArticleByUser.get(sender);
 
                 if (!article) {
-                    await message.reply(`Indiquez le produit. Exemple : "je commande 3 Encens Sarakatane"`);
+                    await message.reply(this.getNaturalPrompt());
                     return;
                 }
 
@@ -705,7 +802,7 @@ class WhatsAppService {
                 return;
             }
 
-            // 7. Confirmation de commande
+            // 8. Confirmation de commande
             if (this.isConfirmation(msg)) {
                 log(`[DEBUG] Confirmation reçue. pendingOrders contient : ${this.pendingOrders.has(sender) ? 'OUI' : 'NON'}`, 'DEBUG');
                 if (this.pendingOrders.has(sender)) {
@@ -713,7 +810,7 @@ class WhatsAppService {
                     this.userStates.set(sender, { step: 'nom', command: order });
                     await message.reply(`Merci pour votre commande. Pour la livraison, quel est votre nom complet ?`);
                 } else {
-                    await message.reply(`S'il vous plaît, pouvez bien reformuler votre demande ? J'ai pas bien saisi ou bien voulez passer une commande maintenant ?`);
+                    await message.reply(this.getNaturalPrompt());
                 }
                 return;
             }
@@ -722,15 +819,14 @@ class WhatsAppService {
                 if (this.pendingOrders.has(sender)) {
                     this.pendingOrders.delete(sender);
                     if (this.userStates.has(sender)) this.userStates.delete(sender);
-                    await message.reply(`Commande annulée. Si vous souhaitez voir notre catalogue, c'est ici : ${this.getCatalogLink()}`);
+                    await message.reply(`Commande annulée. d'autres produits pourrait vous intéresser dans notre catalogue,  consultez-le ici : ${this.getCatalogLink()}`);
                 } else {
                     await message.reply(`Vous n'avez pas de commande en attente. Découvrez notre catalogue : ${this.getCatalogLink()}`);
                 }
                 return;
-          
             }
 
-            // 8. Gestion "Souhaitez-vous autre chose ?"
+            // 9. Gestion "Souhaitez-vous autre chose ?"
             if (this.userStates.has(sender) && this.userStates.get(sender).step === 'fin') {
                 const response = msgLower;
                 if (this.isConfirmation(response)) {
@@ -742,19 +838,19 @@ class WhatsAppService {
                     await message.reply(`Nous vous remercions pour votre commande. Prenez soin de vous et à la prochaine !`);
                     return;
                 } else {
-                    await message.reply(`Je n'ai pas bien compris. Souhaitez-vous autre chose ? (répondez oui ou non)`);
+                    await message.reply(`Je n'ai pas bien compris. Souhaitez-vous autre chose ?`);
                     return;
                 }
             }
 
-            // 9. FAQ
+            // 10. FAQ
             const faqAnswer = this.handleFAQ(msg);
             if (faqAnswer) {
                 await message.reply(faqAnswer);
                 return;
             }
 
-            // 10. Recherche par catégorie
+            // 11. Recherche par catégorie
             const categories = this.catalogue.categories || [];
             const catMatch = categories.find(c => msgLower.includes(c.toLowerCase()));
             if (catMatch) {
@@ -768,7 +864,7 @@ class WhatsAppService {
                 }
             }
 
-            // 11. DeepSeek
+            // 12. DeepSeek
             log(`[DEBUG] Aucune correspondance FAQ, appel à DeepSeek.`);
             const catalogueContext = this.catalogue.articles
                 .filter(a => a.disponible)
@@ -788,12 +884,12 @@ class WhatsAppService {
                 if (this.memory[sender].length > 20) this.memory[sender] = this.memory[sender].slice(-20);
                 this.saveMemory();
             } else {
-                await message.reply(`Je n'ai pas bien compris votre demande. Pouvez-vous reformuler ou utiliser "!catalogue" pour voir nos produits ?`);
+                await message.reply(`Je n'ai pas bien compris votre demande. Pourriez-vous reformuler ou consulter notre catalogue : ${this.getCatalogLink()}`);
             }
 
         } catch (err) {
             log(`Erreur: ${err.message}`);
-            await message.reply(`Désolée, une erreur est survenue. Reessayez ou contactez le support au ${this.config.CONTACT_PHONE}.`);
+            await message.reply(`Toutes mes execuses, je ne pas ecrire actuellement, appelez moi directement au ${this.config.CONTACT_PHONE}.`);
         }
     }
 
