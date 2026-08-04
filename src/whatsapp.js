@@ -480,7 +480,7 @@ class WhatsAppService {
         const phrases = [
             `Bonjour, c'est KADI de la boutique Au Pays Des Senteurs. Comment je peux vous aider ?`,
             `Bonjour et bienvenue chez Au Pays Des Senteurs. Je suis KADI, votre conseillère.`,
-            `Bonjour, merci de me contacter. Je suis KADI, je vous aide à découvrir nos produits ici: ${this.getCatalogLink()}.`,
+            `Bonjour, merci de me contacter. Je suis KADI.`,
             `Bonjour, je vous souhaite une bonne journée. Ici KADI, votre conseillère en produits bien-être.`
         ];
         return phrases[Math.floor(Math.random() * phrases.length)];
