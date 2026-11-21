@@ -6,14 +6,14 @@ services:
     startCommand: npm start
     plan: free
     envVars:
-      - key: DEEPSEEK_API_KEY
+      - key: ANTHROPIC_API_KEY
         sync: false
-        description: Votre clé API DeepSeek
+        description: Votre clé API Claude (Anthropic)
       - key: CONTACT_PHONE
-        value: 0140505518
+        value: "0505730455"
       - key: MY_PERSONAL_NUMBER
-        value: 2250710076550
+        value: "0778602977"
       - key: CATALOG_LINK
-        value: https://wa.me/c/122990784208917
+        value: https://wa.me/c/22505730455
       - key: PORT
         value: 3000

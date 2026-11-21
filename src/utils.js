@@ -58,6 +58,14 @@ function log(message, type = 'INFO') {
 
 function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// Convertit un numéro (ex. "07 78 60 29 77" ou "2250778602977") en identifiant WhatsApp "2250778602977@c.us".
+// Les numéros ivoiriens locaux à 10 chiffres commençant par 0 reçoivent l'indicatif 225.
+function toWhatsAppId(number) {
+    let digits = String(number || '').replace(/\D/g, '');
+    if (digits.length === 10 && digits.startsWith('0')) digits = `225${digits}`;
+    return digits ? `${digits}@c.us` : null;
+}
+
 // Fonction utilitaire pour lister les fichiers d'un dossier (debug)
 function listFiles(dir) {
     if (!fs.existsSync(dir)) return [];
@@ -69,5 +77,5 @@ module.exports = {
     formatArticle, formatList,
     getImagePath, getVideoPath, fileExists,
     getArticleImages, getArticleVideos,
-    log, wait, listFiles
+    log, wait, listFiles, toWhatsAppId
 };

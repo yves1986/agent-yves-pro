@@ -39,7 +39,8 @@
 
 ### Variables d'environnement
 
-- `DEEPSEEK_API_KEY` - Clé API DeepSeek
+- `ANTHROPIC_API_KEY` - Clé API Claude (Anthropic)
+- `CLAUDE_MODEL` - Modèle Claude (défaut : claude-opus-5-5)
 - `CONTACT_PHONE` - Numéro de contact
 - `MY_PERSONAL_NUMBER` - Numéro admin
 - `CATALOG_LINK` - Lien catalogue WhatsApp
