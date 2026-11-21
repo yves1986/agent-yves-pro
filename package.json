@@ -1,22 +1,20 @@
 {
     "name": "agent-kadi",
     "version": "2.0.0",
-    "description": "Agent WhatsApp - Au Pays Des Senteurs",
+    "description": "Agent WhatsApp KADI - Au Pays Des Senteurs",
     "main": "src/index.js",
     "scripts": {
         "start": "node src/index.js",
-        "dev": "nodemon src/index.js",
-        "pm2": "pm2 start ecosystem.config.js",
-        "pm2:stop": "pm2 stop agent-kadi",
-        "pm2:logs": "pm2 logs agent-kadi"
+        "dev": "nodemon src/index.js"
     },
     "dependencies": {
+        "@sparticuz/chromium": "^121.0.0",
         "axios": "^1.6.0",
         "dotenv": "^16.0.0",
         "express": "^4.18.0",
+        "puppeteer-core": "^22.0.0",
         "qrcode-terminal": "^0.12.0",
-        "whatsapp-web.js": "^1.24.0",
-        "puppeteer": "^20.0.0"
+        "whatsapp-web.js": "github:wwebjs/whatsapp-web.js"
     },
     "devDependencies": {
         "nodemon": "^3.0.0"

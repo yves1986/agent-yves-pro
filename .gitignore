@@ -8,10 +8,10 @@ data/orders.json
 .DS_Store
 qr.png
 qr.txt
-media/images/
-media/videos/
-*.mp4
-*.jpg
-*.jpeg
-*.png
-*.webp
+# media/images/
+# media/videos/
+# *.mp4
+# *.jpg
+# *.jpeg
+# *.png
+# *.webp
