@@ -3,8 +3,9 @@ const { log } = require('./utils');
 
 const Anthropic = sdk.Anthropic || sdk.default || sdk;
 
-// Modèles qui acceptent `output_config.effort` et le repli serveur `fallbacks: "default"`.
+// Modèles qui acceptent le repli serveur `fallbacks: "default"` (beta) et ceux qui acceptent `output_config.effort`.
 const MODELS_WITH_FALLBACK = new Set(['claude-opus-5-5', 'claude-opus-5', 'claude-sonnet-5-5', 'claude-fable-5-1', 'claude-fable-5-2']);
+const MODELS_WITH_EFFORT = new Set([...MODELS_WITH_FALLBACK, 'claude-haiku-5-5', 'claude-sonnet-5', 'claude-opus-4-8', 'claude-opus-4-7']);
 
 class IAService {
     /**
@@ -71,8 +72,10 @@ ${JSON.stringify(this.knowledge)}`;
             system: [{ type: 'text', text: this.systemPrompt, cache_control: { type: 'ephemeral' } }],
             messages
         };
+        if (MODELS_WITH_EFFORT.has(this.model)) {
+            params.output_config = { effort: 'low' }; // conversation commerciale : réponses rapides et économiques
+        }
         if (useBetaFeatures) {
-            params.output_config = { effort: 'low' }; // conversation commerciale : réponses rapides
             params.betas = ['server-side-fallback-2026-07-01'];
             params.fallbacks = 'default'; // repli automatique si le modèle refuse la requête
         }

@@ -1,5 +1,4 @@
-const path = require('path');
-const { readJSON, normalizeText, extractKeywords, formatArticle, formatList, log } = require('./utils');
+const { normalizeText, extractKeywords, formatArticle, formatList, log } = require('./utils');
 
 // Mots qui ne désignent pas un produit : ignorés pour la recherche.
 const STOPWORDS = new Set([
@@ -12,15 +11,15 @@ const STOPWORDS = new Set([
 ]);
 
 class Catalogue {
-    constructor() {
-        this.dataPath = path.join(__dirname, '../data/catalogue.json');
+    constructor(data) {
         this.articles = [];
         this.categories = [];
-        this.load();
+        this.load(data);
     }
 
-    load() {
-        const data = readJSON(this.dataPath);
+    load(data) {
+        // require() (et non fs) : Vercel inclut ainsi le fichier dans la fonction déployée
+        data = data || require('../data/catalogue.json');
         this.articles = data.articles || [];
         this.categories = data.categories || [];
         log(`${this.articles.length} articles chargés`);

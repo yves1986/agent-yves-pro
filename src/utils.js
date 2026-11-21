@@ -45,8 +45,8 @@ function formatList(articles, title = 'Résultats', limit = 10) {
 }
 
 // Chemins des médias
-function getImagePath(name) { return path.join(__dirname, '../media/images', name); }
-function getVideoPath(name) { return path.join(__dirname, '../media/videos', name); }
+function getImagePath(name) { return path.join(__dirname, '../public/media/images', name); }
+function getVideoPath(name) { return path.join(__dirname, '../public/media/videos', name); }
 function fileExists(p) { return fs.existsSync(p); }
 function getArticleImages(a) { return a?.images || []; }
 function getArticleVideos(a) { return a?.videos || []; }
