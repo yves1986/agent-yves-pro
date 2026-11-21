@@ -7,7 +7,8 @@ const GRAPH_VERSION = process.env.GRAPH_API_VERSION || 'v24.0';
 
 // Vérifie l'en-tête X-Hub-Signature-256 (HMAC SHA-256 du corps brut avec le secret de l'app Meta).
 function verifySignature(rawBody, signatureHeader, appSecret) {
-    if (!appSecret) return true; // non configuré : on accepte (déconseillé en production)
+    // Sans secret, on refuse tout : sinon n'importe qui pourrait déclencher des appels Claude payants.
+    if (!appSecret) return false;
     if (!signatureHeader || !signatureHeader.startsWith('sha256=')) return false;
     const expected = 'sha256=' + crypto.createHmac('sha256', appSecret).update(rawBody).digest('hex');
     const a = Buffer.from(expected);

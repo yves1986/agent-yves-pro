@@ -59,7 +59,7 @@ Redéployez ensuite (*Deployments > ... > Redeploy*).
 | `CLAUDE_MODEL` | Modèle Claude (défaut `claude-opus-5-5`) |
 | `WHATSAPP_TOKEN` | Jeton d'accès Meta (mode Cloud) |
 | `WHATSAPP_PHONE_NUMBER_ID` | ID du numéro WhatsApp (mode Cloud) |
-| `WHATSAPP_APP_SECRET` | Secret de l'app Meta, vérifie que les webhooks viennent bien de Meta |
+| `WHATSAPP_APP_SECRET` | Secret de l'app Meta (obligatoire : sans lui le webhook refuse tout) |
 | `WHATSAPP_VERIFY_TOKEN` | Jeton choisi pour la vérification du webhook |
 | `ADMIN_TOKEN` | Mot de passe de la page `/api/orders` |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Upstash Redis (ajoutées par l'intégration Vercel) |

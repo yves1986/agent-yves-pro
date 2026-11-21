@@ -56,7 +56,7 @@ async function processMessages(messages) {
 export async function POST(request) {
     const raw = await request.text();
     if (!verifySignature(raw, request.headers.get('x-hub-signature-256'), process.env.WHATSAPP_APP_SECRET)) {
-        log('Signature Meta invalide : requête rejetée', 'WARNING');
+        log(process.env.WHATSAPP_APP_SECRET ? 'Signature Meta invalide : requête rejetée' : 'WHATSAPP_APP_SECRET manquant : webhook désactivé', 'WARNING');
         return new Response('Signature invalide', { status: 403 });
     }
 
